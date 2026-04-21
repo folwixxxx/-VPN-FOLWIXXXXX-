@@ -1,0 +1,50 @@
+name: ⏰ Auto-Expire Subscription
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-expiry:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 📅 Check expiry
+        id: check
+        run: |
+          CURRENT=$(date +%s)
+          EXPIRY=$(cat expiry_date.txt | tr -d ' \n\r')
+          
+          if [ $CURRENT -gt $EXPIRY ]; then
+            echo "expired=true" >> $GITHUB_OUTPUT
+            echo "❌ Подписка истекла"
+          else
+            DAYS_LEFT=$(( ($EXPIRY - $CURRENT) / 86400 ))
+            echo "✅ Осталось дней: $DAYS_LEFT"
+          fi
+      
+      - name: 🔄 Replace with dummy
+        if: steps.check.outputs.expired == 'true'
+        run: |
+          cat > sub.txt << 'EOF'
+          #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+          #profile-update-interval: 1440
+          
+          vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
+          EOF
+          echo "✅ sub.txt заменён"
+      
+      - name: 💾 Save
+        if: steps.check.outputs.expired == 'true'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add sub.txt
+          git commit -m "⏰ Subscription expired" || echo "No changes"
+          git push
