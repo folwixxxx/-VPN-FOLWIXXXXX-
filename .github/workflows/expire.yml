@@ -2,8 +2,8 @@ name: Auto-Expire Subscription
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # каждый день в 00:00 UTC
-  workflow_dispatch:       # можно запустить вручную
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   expire:
@@ -12,33 +12,32 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Check expiry date
+      - name: Check if expired
         id: check
         run: |
           NOW=$(date +%s)
-          EXPIRE=$(cat expiry_date.txt | tr -d ' \n\r')
+          EXPIRE=$(cat expiry_date.txt)
           if [ $NOW -gt $EXPIRE ]; then
             echo "expired=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Replace with dummy subscription
+      - name: Replace with dummy
         if: steps.check.outputs.expired == 'true'
         run: |
-          cat > sub-def.txt << 'EOF'
-          #profile-title: ❌ SUBSCRIPTION EXPIRED ❌
+          cat > def-sub.txt << 'EOF'
+          #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
           #profile-update-interval: 1440
-
-          vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20SUBSCRIPTION%20EXPIRED%20⏰
+          
+          vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
           EOF
 
-      - name: Commit and push
+      - name: Push changes
         if: steps.check.outputs.expired == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add sub-def.txt
+          git add def-sub.txt
           git commit -m "Auto-expire subscription" || exit 0
           git push
