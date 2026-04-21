@@ -1,7 +1,7 @@
 #profile-title: ❀FOLWIXXXX VPN/ DEF-SUB❀
 #profile-update-interval: 1
-#profile-subscription-info: dwdsfwerftgvtffdgdd
-#profile-expiry: 2026-04-22
+#expiry: 2026-04-22
+#devices: 5
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------      
      🧾ЧЁРНЫЙ СПИСОК⚫ (Подписки, обходящие Черные Списки РКН.)
