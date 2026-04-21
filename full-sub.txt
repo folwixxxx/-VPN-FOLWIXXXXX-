@@ -1,7 +1,7 @@
 #profile-title: ❀FOLWIXXXX VPN/ FULL-SUB❀
 #profile-update-interval: 1
       🧾ЧЁРНЫЙ СПИСОК⚫ (Подписки, обходящие Черные Списки РКН.)
-vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20ЧЁРНЫЙ%20СПИСОК%20⚫%20(Подписки,%20обходящие%20Черные%20Списки%20РКН.)
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20ЧЁРНЫЙ%20СПИСОК%20⚫
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20Подписки,%20обходящие%20Черные%20Списки%20РКН%20⚫
       VPN:
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@154.197.75.138:2096?path=%2F%3FTelegram%25F0%259F%2587%25A8%25F0%259F%2587%25B3%2540WangCai2%3D&security=tls&encryption=none&host=sni.111000.indevs.in&type=ws&sni=sni.111000.indevs.in#🇺🇳%20Anycast%20⚫
@@ -27,7 +27,7 @@ vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&
 vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=qq&type=tcp&flow=xtls-rprx-vision&sni=rf.o4ka-internet.com&sid=5629431325884ff0#🇷🇺%20Russia%20⚫
 vless://c2810530-74e4-4160-b440-c4e5acc08d68@45.93.201.160:8443?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇷🇺%20Russia%20⚫
       🧾БЕЛЫЙ СПИСОК⚪ (Подписки, обходящие Белые Списки РКН.)
-vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20⚪%20(Подписки,%20обходящие%20Белые%20Списки%20РКН.)
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20⚪
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20Подписки,%20обходящие%20Белые%20Списки%20РКН%20⚪
       VPN:
 trojan://1234567890@159.195.39.241:2053?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🇺🇳%20Anycast%20⚪
