@@ -1,0 +1,4 @@
+#profile-title: ❌ SUBSCRIPTION EXPIRED ❌
+#profile-update-interval: 1440
+
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20SUBSCRIPTION%20EXPIRED%20⏰
