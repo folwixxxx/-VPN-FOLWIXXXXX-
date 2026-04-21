@@ -2,12 +2,6 @@
 #profile-update-interval: 1
       🧾ЧЁРНЫЙ СПИСОК⚫ (Подписки, обходящие Черные Списки РКН.)
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20ЧЁРНЫЙ%20СПИСОК%20⚫%20(Подписки,%20обходящие%20Черные%20Списки%20РКН.)
-vless://6202b230-417c-4d8e-b624-0f71afa9c75d@156.225.72.238:2096?path=%2F&security=tls&encryption=none&host=sni.jpmj.dev&type=ws&sni=sni.jpmj.dev#🇨🇦%20Canada%20⚫
-vless://6202b230-417c-4d8e-b624-0f71afa9c75d@162.159.12.151:443?path=%2F&security=tls&alpn=networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-&encryption=none&host=sni.111000.indevs.in&type=ws&sni=sni.111000.indevs.in#🇨🇦%20Canada%20⚫
-vless://91ae9f94-3b66-f9d2-b185-a68df15d2091@cf2.bntabriz.ir:443?path=%2Fczh2&security=tls&alpn=h2&encryption=none&host=cz2.maf-nodef.ir&fp=chrome&type=xhttp&sni=cz2.maf-nodef.ir#🇨🇿%20Czechia%20⚫
-vless://595ae3f9-5a91-4eaa-82a3-28a221cf8f7f@45.92.1.37:30047?path=%2F&security=&encryption=none&type=ws#🇳🇱%20Netherlands%20⚫
-vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=rf.o4ka-internet.com&sid=5629431325884ff0#🇷🇺%20Russia%20⚫
-vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=qq&type=tcp&flow=xtls-rprx-vision&sni=rf.o4ka-internet.com&sid=5629431325884ff0#🇷🇺%20Russia%20⚫
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@154.197.75.138:2096?path=%2F%3FTelegram%25F0%259F%2587%25A8%25F0%259F%2587%25B3%2540WangCai2%3D&security=tls&encryption=none&host=sni.111000.indevs.in&type=ws&sni=sni.111000.indevs.in#🇺🇳%20Anycast%20⚫
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@8.6.112.0:2096?path=%2F%3Fed%3D2560&security=tls&encryption=none&host=sni.jpmj.dev&fp=chrome&type=ws&sni=sni.jpmj.dev#🇺🇳%20Anycast%20⚫
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@185.238.228.238:2096?path=%2F&security=tls&encryption=none&host=sni.jpmj.dev&type=ws&sni=sni.jpmj.dev#🇺🇳%20Anycast%20⚫
@@ -16,6 +10,20 @@ vless://6202b230-417c-4d8e-b624-0f71afa9c75d@144.31.116.136:443?path=%2F%3Fed%3D
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@144.31.139.232:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&encryption=none&host=sni.latonyamadeline.ndjp.net&fp=chrome&type=ws&sni=sni.latonyamadeline.ndjp.net#🌍%20Anycast%20⚫
 trojan://1234567890@109.237.97.197:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🌍%20Anycast%20⚫
 trojan://1234567890@194.48.250.61:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🌍%20Anycast%20⚫
+vless://6202b230-417c-4d8e-b624-0f71afa9c75d@156.225.72.238:2096?path=%2F&security=tls&encryption=none&host=sni.jpmj.dev&type=ws&sni=sni.jpmj.dev#🇨🇦%20Canada%20⚫
+vless://6202b230-417c-4d8e-b624-0f71afa9c75d@162.159.12.151:443?path=%2F&security=tls&alpn=networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-channel%40.networld_vpn-&encryption=none&host=sni.111000.indevs.in&type=ws&sni=sni.111000.indevs.in#🇨🇦%20Canada%20⚫
+vless://91ae9f94-3b66-f9d2-b185-a68df15d2091@cf2.bntabriz.ir:443?path=%2Fczh2&security=tls&alpn=h2&encryption=none&host=cz2.maf-nodef.ir&fp=chrome&type=xhttp&sni=cz2.maf-nodef.ir#🇨🇿%20Czechia%20⚫
+vless://12a3c993-e2f1-4ebb-b622-d67e546f34e5@download.spectrum.vu:443?security=reality&encryption=none&pbk=sXC7sPCzHG_uYfvk3GSUdYQKfHAwirOVWMhO50Y9Pn8&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=download.spectrum.vu&sid=1a1c4d9a3f3a#🇪🇪%20Estonia%20⚫
+vless://cb1691ad-49cc-46a9-b734-91c109200c32@s91247.cdn.ngenix.net:443?path=%2Fstream%2Flive&security=tls&encryption=none&host=s91247.cdn.ngenix.net&fp=qq&type=ws&sni=s91247.cdn.ngenix.net#🇫🇮%20Finland%20⚫
+vless://142e8693-e884-475d-80c8-8cd637b13493@video1.voidvpn.pro:443?security=reality&encryption=none&pbk=POMIW99KWlwbe3RvCdmSHgfDmdPl9E4pGQJOIzMShg8&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=video1.voidvpn.pro#🇩🇪%20Germany%20⚫
+vless://3a6cdcf4-903c-45e5-b019-ca7c6d768972@nl-1.devtoolspro.online:2043?mode=gun&security=reality&encryption=none&pbk=QjzO51Z1SzCBsaPrwxE9PEm7GK2wNySjAYITQ3J8fU8&fp=chrome&type=grpc&sni=nl-1.devtoolspro.online#🇩🇪%20Germany%20⚫
+vless://595ae3f9-5a91-4eaa-82a3-28a221cf8f7f@45.92.1.37:30047?path=%2F&security=&encryption=none&type=ws#🇳🇱%20Netherlands%20⚫
+vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@144.31.24.92:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=random&spx=%2F&type=tcp&flow=xtls-rprx-vision&sni=nl.o4ka-internet.com&sid=5629431325884ff0#🇳🇱%20Netherlands%20⚫
+vless://142e8693-e884-475d-80c8-8cd637b13493@files1.voidvpn.pro:443?security=reality&encryption=none&pbk=cilngKLYabB_jsHDPSFMSHkO88wufuFnQv5OAbbizTk&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files1.voidvpn.pro#🇵🇱%20Poland%20⚫
+vless://142e8693-e884-475d-80c8-8cd637b13493@files3.voidvpn.pro:443?security=reality&encryption=none&pbk=ORzkqviFkgr94TbeJMXTam10scLN77xYyj_le4oMECU&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files3.voidvpn.pro#🇵🇱%20Poland%20⚫
+vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=rf.o4ka-internet.com&sid=5629431325884ff0#🇷🇺%20Russia%20⚫
+vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&encryption=none&pbk=V2JprbR_aJkS7uX6anyU3nrswGxdvDQT2HpY4WnzuC8&headerType=none&fp=qq&type=tcp&flow=xtls-rprx-vision&sni=rf.o4ka-internet.com&sid=5629431325884ff0#🇷🇺%20Russia%20⚫
+vless://c2810530-74e4-4160-b440-c4e5acc08d68@45.93.201.160:8443?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇷🇺%20Russia%20⚫
       🧾БЕЛЫЙ СПИСОК⚪ (Подписки, обходящие Белые Списки РКН.)
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20⚪%20(Подписки,%20обходящие%20Белые%20Списки%20РКН.)
 vless://75807638-6f19-07d0-ae08-38492ee85c88@tegr.firstvideocdn.ru:52006?type=tcp&security=tls&fp=chrome&flow=xtls-rprx-vision#🇷🇺%20Russia%20⚪
