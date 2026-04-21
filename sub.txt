@@ -26,8 +26,8 @@ vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&
 vless://c2810530-74e4-4160-b440-c4e5acc08d68@45.93.201.160:8443?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇷🇺%20Russia%20⚫
       🧾БЕЛЫЙ СПИСОК⚪ (Подписки, обходящие Белые Списки РКН.)
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20⚪%20(Подписки,%20обходящие%20Белые%20Списки%20РКН.)
-trojan://1234567890@159.195.39.241:2053?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🌍%20Anycast%20⚪
-trojan://1234567890@159.195.79.8:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🌍%20Anycast%20⚪
+trojan://1234567890@159.195.39.241:2053?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🇺🇳%20Anycast%20⚪
+trojan://1234567890@159.195.79.8:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🇺🇳%20Anycast%20⚪
 vless://75807638-6f19-0320-ae08-38492ee85c88@178.72.162.155:52006?security=tls&alpn=http%2F1.1&encryption=none&headerType=none&type=tcp&flow=xtls-rprx-vision#🇧🇪%20Belgium%20⚪
 vless://12a3c993-e2f1-4ebb-b622-d67e546f34e5@94.231.221.122:443?security=reality&encryption=none&pbk=joMQZiNZWpGdcKDBOyAJQMnvSfU54GYUqqP_NwUtHAo&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=www.microsoft.com&sid=a1b2c3d4#🇫🇮%20Finland%20⚪
 vless://12a3c993-e2f1-4ebb-b622-d67e546f34e5@hetzner.spectrum.vu:443?security=reality&encryption=none&pbk=joMQZiNZWpGdcKDBOyAJQMnvSfU54GYUqqP_NwUtHAo&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=www.microsoft.com&sid=a1b2c3d4#🇫🇮%20Finland%20⚪
