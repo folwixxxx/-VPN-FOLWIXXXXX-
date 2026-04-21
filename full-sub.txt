@@ -2,6 +2,8 @@
 #profile-update-interval: 1
       🧾ЧЁРНЫЙ СПИСОК⚫ (Подписки, обходящие Черные Списки РКН.)
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20ЧЁРНЫЙ%20СПИСОК%20⚫%20(Подписки,%20обходящие%20Черные%20Списки%20РКН.)
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20Подписки,%20обходящие%20Черные%20Списки%20РКН%20⚫
+      VPN:
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@154.197.75.138:2096?path=%2F%3FTelegram%25F0%259F%2587%25A8%25F0%259F%2587%25B3%2540WangCai2%3D&security=tls&encryption=none&host=sni.111000.indevs.in&type=ws&sni=sni.111000.indevs.in#🇺🇳%20Anycast%20⚫
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@8.6.112.0:2096?path=%2F%3Fed%3D2560&security=tls&encryption=none&host=sni.jpmj.dev&fp=chrome&type=ws&sni=sni.jpmj.dev#🇺🇳%20Anycast%20⚫
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@185.238.228.238:2096?path=%2F&security=tls&encryption=none&host=sni.jpmj.dev&type=ws&sni=sni.jpmj.dev#🇺🇳%20Anycast%20⚫
@@ -26,6 +28,8 @@ vless://2983c1d0-2c98-4e16-a92a-a64351ec2b30@89.223.124.21:443?security=reality&
 vless://c2810530-74e4-4160-b440-c4e5acc08d68@45.93.201.160:8443?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇷🇺%20Russia%20⚫
       🧾БЕЛЫЙ СПИСОК⚪ (Подписки, обходящие Белые Списки РКН.)
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20⚪%20(Подписки,%20обходящие%20Белые%20Списки%20РКН.)
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20Подписки,%20обходящие%20Белые%20Списки%20РКН%20⚪
+      VPN:
 trojan://1234567890@159.195.39.241:2053?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🇺🇳%20Anycast%20⚪
 trojan://1234567890@159.195.79.8:8443?path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3&security=tls&host=kfm-bn0.pages.dev&type=ws&sni=kfm-bn0.pages.dev#🇺🇳%20Anycast%20⚪
 vless://75807638-6f19-0320-ae08-38492ee85c88@178.72.162.155:52006?security=tls&alpn=http%2F1.1&encryption=none&headerType=none&type=tcp&flow=xtls-rprx-vision#🇧🇪%20Belgium%20⚪
@@ -61,9 +65,10 @@ vless://c2810530-74e4-4160-b440-c4e5acc08d68@5.42.124.169:8443?security=reality&
 vless://dd09a21b-c1ac-4fde-83bb-dc09f85416b6@5.42.115.103:443?security=reality&encryption=none&pbk=V6FabatADtcX7aO9KMjGCadJC4LuQ_5nRViab-z-nFQ&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=www.apple.com&sid=23#🇷🇺%20Russia%20⚪
 trojan://a612c919-fe63-4da7-86a8-c6c3f824ca57@109.73.193.81:443?security=reality&pbk=vLLO06dCKIhSxGfKc4SJiGgmPTej8z6tdOAZ8C7KYSc&headerType=none&fp=chrome&type=tcp&sni=www.google.com&sid=4a#🇷🇺%20Russia%20⚪
 vless://c2810530-74e4-4160-b440-c4e5acc08d68@159.195.25.163:4355?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇨🇭%20Switzerland%20⚪
-🧾БЕЛЫЙ СПИСОК CIDR-ПОДПИСКА⚪
+     🧾БЕЛЫЙ СПИСОК CIDR-ПОДПИСКА⚪
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20CIDR-ПОДПИСКА%20⚪
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20только%20с%20хостерами:%20VK,%20YANDEX,%20CDNVIDEO,%20Beeline%20⚪
+      VPN:
 vless://1191721e-d3eb-409b-8cb9-717b12e4a96a@51.250.120.99:443?security=reality&encryption=none&pbk=EFVYyes5-yvLnlI-a7PtNFRyI3qOqQd-bzgN6cbCYBo&headerType=none&type=tcp&flow=xtls-rprx-vision&sni=sun6-20.userapi.com#🇺🇳%20Anycast%20YA%20⚪
 vless://82b5b465-3307-4a25-acef-abd1649bbedf@158.160.82.8:443?security=reality&encryption=none&pbk=gwuAehnMX6e-n1fxIenfjx43j3qXXi7Cb4wfnW5VyBQ&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=max.ru&sid=f04729f65b9ea261#🇫🇮%20Finland%20YA%20⚪
 vless://82b5b465-3307-4a25-acef-abd1649bbedf@edge8.samovargate.com:443?security=reality&encryption=none&pbk=gwuAehnMX6e-n1fxIenfjx43j3qXXi7Cb4wfnW5VyBQ&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=max.ru&sid=f04729f65b9ea261#🇫🇮%20Finland%20YA%20⚪
