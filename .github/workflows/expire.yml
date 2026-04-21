@@ -2,7 +2,7 @@ name: ⏰ Auto-Expire Subscription
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,6 +20,9 @@ jobs:
         run: |
           CURRENT=$(date +%s)
           EXPIRY=$(cat expiry_date.txt | tr -d ' \n\r')
+          
+          echo "Current: $CURRENT"
+          echo "Expiry:  $EXPIRY"
           
           if [ $CURRENT -gt $EXPIRY ]; then
             echo "expired=true" >> $GITHUB_OUTPUT
