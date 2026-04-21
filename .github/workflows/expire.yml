@@ -1,53 +1,44 @@
-name: ⏰ Auto-Expire Subscription
+name: Auto-Expire Subscription
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'   # каждый день в 00:00 UTC
+  workflow_dispatch:       # можно запустить вручную
 
 jobs:
-  check-expiry:
+  expire:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: 📅 Check expiry
+
+      - name: Check expiry date
         id: check
         run: |
-          CURRENT=$(date +%s)
-          EXPIRY=$(cat expiry_date.txt | tr -d ' \n\r')
-          
-          echo "Current: $CURRENT"
-          echo "Expiry:  $EXPIRY"
-          
-          if [ $CURRENT -gt $EXPIRY ]; then
+          NOW=$(date +%s)
+          EXPIRE=$(cat expiry_date.txt | tr -d ' \n\r')
+          if [ $NOW -gt $EXPIRE ]; then
             echo "expired=true" >> $GITHUB_OUTPUT
-            echo "❌ Подписка истекла"
-          else
-            DAYS_LEFT=$(( ($EXPIRY - $CURRENT) / 86400 ))
-            echo "✅ Осталось дней: $DAYS_LEFT"
           fi
-      
-      - name: 🔄 Replace with dummy
+
+      - name: Replace with dummy subscription
         if: steps.check.outputs.expired == 'true'
         run: |
-          cat > sub.txt << 'EOF'
-          #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+          cat > sub-def.txt << 'EOF'
+          #profile-title: ❌ SUBSCRIPTION EXPIRED ❌
           #profile-update-interval: 1440
-          
-          vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
+
+          vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20SUBSCRIPTION%20EXPIRED%20⏰
           EOF
-          echo "✅ sub.txt заменён"
-      
-      - name: 💾 Save
+
+      - name: Commit and push
         if: steps.check.outputs.expired == 'true'
         run: |
-          git config user.name "GitHub Actions"
+          git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add sub.txt
-          git commit -m "⏰ Subscription expired" || echo "No changes"
+          git add sub-def.txt
+          git commit -m "Auto-expire subscription" || exit 0
           git push
