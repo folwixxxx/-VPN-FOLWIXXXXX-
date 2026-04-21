@@ -56,11 +56,3 @@ vless://a96f18f0-4a56-4c4f-be6e-434835f5523c@158.160.71.158:443?flow=xtls-rprx-v
 vless://a96f18f0-4a56-4c4f-be6e-434835f5523c@ya2177.memeplanet.org:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=chrome&pbk=0j-QVy2pFdCuKAkppUYr0diUSjjKse9CtM5AMhHzqD4&sid=8ac77e6bab737698&sni=ads.x5.ru#🇱🇹%20Lithuania%20🏳️БЕЛЫЙ%20СПИСОК%20❀
 vless://75807638-6f19-2710-ae08-38492ee85c88@cluster-de-1.firstvideocdn.ru:52006?type=tcp&security=tls&encryption=none&flow=xtls-rprx-vision&fp=chrome#🇵🇱%20Poland%20🏳️БЕЛЫЙ%20СПИСОК%20❀
 vless://75807638-6f19-2710-ae08-38492ee85c88@cluster-de-1.firstvideocdn.ru:52006?type=tcp&security=tls&encryption=none&flow=xtls-rprx-vision&insecure=1#🇵🇱%20Poland%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://75807638-6f19-2710-ae08-38492ee85c88@cluster-de-2.firstvideocdn.ru:52006?type=tcp&security=tls&encryption=none&flow=xtls-rprx-vision#🇵🇱%20Poland%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://30a3d65b-2963-48ef-ac5c-9f354fadc85c@212.233.121.168:5443?encryption=none&type=tcp&security=reality&fp=chrome&sni=ads.x5.ru&pbk=nxnDt_F4R6QK9mKQ7dUpvCcJPtwYNPdlNWWjeiDyYj0&sid=e0d4ee#🇵🇱%20Poland%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://30a3d65b-2963-48ef-ac5c-9f354fadc85c@212.233.121.168:5443?encryption=none&type=tcp&security=reality&fp=qq&sni=ads.x5.ru&pbk=nxnDt_F4R6QK9mKQ7dUpvCcJPtwYNPdlNWWjeiDyYj0&sid=e0d4ee#🇵🇱%20Poland%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://4e4f5607-087f-4ff6-907c-6b466530b455@109.205.58.79:54986?type=tcp&security=reality&encryption=none&fp=chrome&pbk=r5MXUjZdwVFbi1XWgElNHWbAn5SA_XRyoENzVTDxa2U&sid=cccbaf57&sni=www.vk.com#🇳🇱%20Netherlands%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://72985048-3772-11f1-8881-0052adf3d13e@7.borshclick.tech:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=chrome&pbk=DEZum6o0PHaLJPYz8sVMiC-_BLlLraHO-auJvJVKZEw&sid=eca26c4b&sni=www.vk.ru#🇳🇱%20Netherlands%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-vless://72985048-3772-11f1-8881-0052adf3d13e@7.borshclick.tech:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=random&pbk=DEZum6o0PHaLJPYz8sVMiC-_BLlLraHO-auJvJVKZEw&sid=eca26c4b&sni=www.vk.ru&spx=#🇳🇱%20Netherlands%20🏳️БЕЛЫЙ%20СПИСОК%20❀
-@folwixxxx
-Comment
