@@ -67,7 +67,7 @@ trojan://a612c919-fe63-4da7-86a8-c6c3f824ca57@109.73.193.81:443?security=reality
 vless://c2810530-74e4-4160-b440-c4e5acc08d68@159.195.25.163:4355?security=reality&encryption=none&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=files.moscownews24.ru#🇨🇭%20Switzerland%20⚪
      🧾БЕЛЫЙ СПИСОК CIDR-ПОДПИСКА⚪
 vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20БЕЛЫЙ%20СПИСОК%20CIDR-ПОДПИСКА%20⚪
-vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20только%20с%20хостерами:%20VK,%20YANDEX,%20CDNVIDEO,%20Beeline%20⚪
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#🧾%20Только%20с%20хостерами:%20VK,%20YANDEX,%20CDNVIDEO,%20Beeline%20⚪
       VPN:
 vless://1191721e-d3eb-409b-8cb9-717b12e4a96a@51.250.120.99:443?security=reality&encryption=none&pbk=EFVYyes5-yvLnlI-a7PtNFRyI3qOqQd-bzgN6cbCYBo&headerType=none&type=tcp&flow=xtls-rprx-vision&sni=sun6-20.userapi.com#🇺🇳%20Anycast%20YA%20⚪
 vless://82b5b465-3307-4a25-acef-abd1649bbedf@158.160.82.8:443?security=reality&encryption=none&pbk=gwuAehnMX6e-n1fxIenfjx43j3qXXi7Cb4wfnW5VyBQ&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=max.ru&sid=f04729f65b9ea261#🇫🇮%20Finland%20YA%20⚪
