@@ -1,0 +1,51 @@
+name: Auto-Expire All Subscriptions
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  expire-all:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check and expire all users
+        run: |
+          NOW=$(date +%s)
+          
+          for expiry_file in *.expiry; do
+            if [ ! -f "$expiry_file" ]; then
+              continue
+            fi
+            
+            username=$(basename "$expiry_file" .expiry)
+            data_file="${username}.txt"
+            EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
+            
+            if [ $NOW -gt $EXPIRE ]; then
+              echo "❌ $username: истекла"
+              
+              cat > "$data_file" << 'EOF'
+              #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+              #profile-update-interval: 1440
+              
+              vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
+              EOF
+              
+              rm -f "$expiry_file"
+            fi
+          done
+
+      - name: 💾 Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add *.txt *.expiry 2>/dev/null || true
+          git diff --quiet && git diff --staged --quiet || git commit -m "⏰ Auto-expire"
+          git push
