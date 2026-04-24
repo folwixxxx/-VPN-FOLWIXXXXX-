@@ -24,35 +24,40 @@ jobs:
           ACTIVE_COUNT=0
           
           # Проверяем файлы истечения в папке subscriptions/
-          for expiry_file in subscriptions/*.expiry; do
-            if [ ! -f "$expiry_file" ]; then
-              continue
-            fi
-            
-            username=$(basename "$expiry_file" .expiry)
-            data_file="subscriptions/${username}.txt"
-            EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
-            
-            if [ $NOW -gt $EXPIRE ]; then
-              echo "❌ $username: подписка истекла"
-              EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
+          if [ -d "subscriptions" ]; then
+            for expiry_file in subscriptions/*.expiry; do
+              if [ ! -f "$expiry_file" ]; then
+                continue
+              fi
               
-              # Заменяем файл подписки на пустышку
-              cat > "$data_file" << 'EOF'
-              #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
-              #profile-update-interval: 1440
+              username=$(basename "$expiry_file" .expiry)
+              data_file="subscriptions/${username}.txt"
+              EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
               
-              vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
-              EOF
-              
-              # Удаляем файл истечения
-              rm -f "$expiry_file"
-            else
-              DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
-              echo "✅ $username: подписка активна, осталось $DAYS_LEFT дней"
-              ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
-            fi
-          done
+              if [ $NOW -gt $EXPIRE ]; then
+                echo "❌ $username: подписка истекла"
+                EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
+                
+                # Заменяем файл подписки на пустышку
+                cat > "$data_file" << 'EOF'
+                #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+                #profile-update-interval: 1440
+                
+                vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
+                EOF
+                
+                # Удаляем файл истечения
+                rm -f "$expiry_file"
+              else
+                DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
+                echo "✅ $username: подписка активна, осталось $DAYS_LEFT дней"
+                ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
+              fi
+            done
+          else
+            echo "⚠️ Папка subscriptions/ не найдена, создаю..."
+            mkdir -p subscriptions
+          fi
           
           echo ""
           echo "📊 ИТОГИ ПРОВЕРКИ:"
@@ -64,41 +69,48 @@ jobs:
           CLEANED_COUNT=0
           
           # Очищаем старые файлы-пустышки, у которых нет файла истечения
-          for txt_file in subscriptions/user_*.txt; do
-            if [ ! -f "$txt_file" ]; then
-              continue
-            fi
-            
-            username=$(basename "$txt_file" .txt)
-            expiry_file="subscriptions/${username}.expiry"
-            
-            # Если нет файла истечения, значит подписка уже истекла
-            if [ ! -f "$expiry_file" ]; then
-              # Проверяем, что это пустышка
-              if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
-                echo "🧹 Удаляем старый файл-пустышку: $txt_file"
-                rm -f "$txt_file"
-                CLEANED_COUNT=$((CLEANED_COUNT + 1))
+          if [ -d "subscriptions" ]; then
+            for txt_file in subscriptions/user_*.txt; do
+              if [ ! -f "$txt_file" ]; then
+                continue
               fi
-            fi
-          done
+              
+              username=$(basename "$txt_file" .txt)
+              expiry_file="subscriptions/${username}.expiry"
+              
+              # Если нет файла истечения, значит подписка уже истекла
+              if [ ! -f "$expiry_file" ]; then
+                # Проверяем, что это пустышка
+                if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
+                  echo "🧹 Удаляем старый файл-пустышку: $txt_file"
+                  rm -f "$txt_file"
+                  CLEANED_COUNT=$((CLEANED_COUNT + 1))
+                fi
+              fi
+            done
+          fi
+          
+          # Создаём папки, если их нет
+          mkdir -p balances trials
           
           # Удаляем очень старые файлы пробного периода (старше 90 дней)
-          for trial_file in trials/trial_*; do
-            if [ ! -f "$trial_file" ]; then
-              continue
-            fi
-            
-            # Проверяем возраст файла (если есть команда stat)
-            if command -v stat &> /dev/null; then
-              FILE_AGE=$(($(date +%s) - $(stat -c %Y "$trial_file" 2>/dev/null || stat -f %m "$trial_file" 2>/dev/null)))
-              if [ $FILE_AGE -gt 7776000 ]; then  # 90 дней
-                echo "🧹 Удаляем старый trial-файл: $trial_file (возраст $((FILE_AGE / 86400)) дней)"
-                rm -f "$trial_file"
-                CLEANED_COUNT=$((CLEANED_COUNT + 1))
+          if [ -d "trials" ]; then
+            for trial_file in trials/trial_*; do
+              if [ ! -f "$trial_file" ]; then
+                continue
               fi
-            fi
-          done
+              
+              # Проверяем возраст файла
+              if command -v stat &> /dev/null; then
+                FILE_AGE=$(($(date +%s) - $(stat -c %Y "$trial_file" 2>/dev/null || stat -f %m "$trial_file" 2>/dev/null)))
+                if [ $FILE_AGE -gt 7776000 ]; then  # 90 дней
+                  echo "🧹 Удаляем старый trial-файл: $trial_file (возраст $((FILE_AGE / 86400)) дней)"
+                  rm -f "$trial_file"
+                  CLEANED_COUNT=$((CLEANED_COUNT + 1))
+                fi
+              fi
+            done
+          fi
           
           if [ $CLEANED_COUNT -gt 0 ]; then
             echo "🧹 Очищено файлов: $CLEANED_COUNT"
@@ -110,16 +122,37 @@ jobs:
         run: |
           echo ""
           echo "📁 ТЕКУЩЕЕ СОСТОЯНИЕ РЕПОЗИТОРИЯ:"
-          echo "   📂 Подписки: $(ls -1 subscriptions/*.txt 2>/dev/null | wc -l) активных"
-          echo "   📂 Балансы: $(ls -1 balances/*.json 2>/dev/null | wc -l) пользователей"
-          echo "   📂 Пробники: $(ls -1 trials/trial_* 2>/dev/null | wc -l) использовано"
+          
+          if [ -d "subscriptions" ]; then
+            SUB_COUNT=$(ls -1 subscriptions/*.txt 2>/dev/null | wc -l)
+            echo "   📂 Подписки: $SUB_COUNT активных"
+          else
+            echo "   📂 Подписки: папка не создана"
+            mkdir -p subscriptions
+          fi
+          
+          if [ -d "balances" ]; then
+            BAL_COUNT=$(ls -1 balances/*.json 2>/dev/null | wc -l)
+            echo "   📂 Балансы: $BAL_COUNT пользователей"
+          else
+            echo "   📂 Балансы: папка не создана"
+            mkdir -p balances
+          fi
+          
+          if [ -d "trials" ]; then
+            TRIAL_COUNT=$(ls -1 trials/trial_* 2>/dev/null | wc -l)
+            echo "   📂 Пробники: $TRIAL_COUNT использовано"
+          else
+            echo "   📂 Пробники: папка не создана"
+            mkdir -p trials
+          fi
 
       - name: 💾 Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Добавляем все изменения
+          # Добавляем все изменения и новые папки
           git add subscriptions/ balances/ trials/ 2>/dev/null || true
           git add -u 2>/dev/null || true
           
