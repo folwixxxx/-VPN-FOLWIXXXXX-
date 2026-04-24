@@ -36,7 +36,6 @@ jobs:
               echo "❌ $username: истекла"
               EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
               
-              # Заменяем на пустышку
               cat > "$data_file" << 'EOF'
               #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
               #profile-update-interval: 1440
