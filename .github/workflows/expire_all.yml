@@ -23,6 +23,7 @@ jobs:
           EXPIRED_COUNT=0
           ACTIVE_COUNT=0
           
+          # Проверяем файлы истечения в папке subscriptions/
           for expiry_file in subscriptions/*.expiry; do
             if [ ! -f "$expiry_file" ]; then
               continue
@@ -33,9 +34,10 @@ jobs:
             EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
             
             if [ $NOW -gt $EXPIRE ]; then
-              echo "❌ $username: истекла"
+              echo "❌ $username: подписка истекла"
               EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
               
+              # Заменяем файл подписки на пустышку
               cat > "$data_file" << 'EOF'
               #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
               #profile-update-interval: 1440
@@ -43,18 +45,25 @@ jobs:
               vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
               EOF
               
+              # Удаляем файл истечения
               rm -f "$expiry_file"
             else
               DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
-              echo "✅ $username: осталось $DAYS_LEFT дней"
+              echo "✅ $username: подписка активна, осталось $DAYS_LEFT дней"
               ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
             fi
           done
           
-          echo "📊 Итог: активных - $ACTIVE_COUNT, истекло - $EXPIRED_COUNT"
+          echo ""
+          echo "📊 ИТОГИ ПРОВЕРКИ:"
+          echo "   ✅ Активных подписок: $ACTIVE_COUNT"
+          echo "   ❌ Истекших подписок: $EXPIRED_COUNT"
 
       - name: 🧹 Clean old empty subscription files
         run: |
+          CLEANED_COUNT=0
+          
+          # Очищаем старые файлы-пустышки, у которых нет файла истечения
           for txt_file in subscriptions/user_*.txt; do
             if [ ! -f "$txt_file" ]; then
               continue
@@ -63,19 +72,62 @@ jobs:
             username=$(basename "$txt_file" .txt)
             expiry_file="subscriptions/${username}.expiry"
             
+            # Если нет файла истечения, значит подписка уже истекла
             if [ ! -f "$expiry_file" ]; then
+              # Проверяем, что это пустышка
               if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
-                echo "🧹 Очищаем старую пустышку: $txt_file"
+                echo "🧹 Удаляем старый файл-пустышку: $txt_file"
                 rm -f "$txt_file"
+                CLEANED_COUNT=$((CLEANED_COUNT + 1))
               fi
             fi
           done
+          
+          # Удаляем очень старые файлы пробного периода (старше 90 дней)
+          for trial_file in trials/trial_*; do
+            if [ ! -f "$trial_file" ]; then
+              continue
+            fi
+            
+            # Проверяем возраст файла (если есть команда stat)
+            if command -v stat &> /dev/null; then
+              FILE_AGE=$(($(date +%s) - $(stat -c %Y "$trial_file" 2>/dev/null || stat -f %m "$trial_file" 2>/dev/null)))
+              if [ $FILE_AGE -gt 7776000 ]; then  # 90 дней
+                echo "🧹 Удаляем старый trial-файл: $trial_file (возраст $((FILE_AGE / 86400)) дней)"
+                rm -f "$trial_file"
+                CLEANED_COUNT=$((CLEANED_COUNT + 1))
+              fi
+            fi
+          done
+          
+          if [ $CLEANED_COUNT -gt 0 ]; then
+            echo "🧹 Очищено файлов: $CLEANED_COUNT"
+          else
+            echo "🧹 Старых файлов для очистки не найдено"
+          fi
 
-      - name: 💾 Commit and push
+      - name: 📊 Show repository stats
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          echo ""
+          echo "📁 ТЕКУЩЕЕ СОСТОЯНИЕ РЕПОЗИТОРИЯ:"
+          echo "   📂 Подписки: $(ls -1 subscriptions/*.txt 2>/dev/null | wc -l) активных"
+          echo "   📂 Балансы: $(ls -1 balances/*.json 2>/dev/null | wc -l) пользователей"
+          echo "   📂 Пробники: $(ls -1 trials/trial_* 2>/dev/null | wc -l) использовано"
+
+      - name: 💾 Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Добавляем все изменения
           git add subscriptions/ balances/ trials/ 2>/dev/null || true
           git add -u 2>/dev/null || true
-          git diff --quiet && git diff --staged --quiet || git commit -m "⏰ Auto-expire $(date +'%Y-%m-%d %H:%M')"
-          git push
+          
+          # Коммитим, если есть изменения
+          if ! git diff --quiet --staged; then
+            git commit -m "⏰ Auto-expire subscriptions and cleanup $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+            echo "✅ Изменения отправлены в репозиторий"
+          else
+            echo "ℹ️ Нет изменений для сохранения"
+          fi
