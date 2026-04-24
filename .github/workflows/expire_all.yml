@@ -18,19 +18,25 @@ jobs:
       - name: 🔍 Check and expire all users
         run: |
           NOW=$(date +%s)
+          echo "🕐 Текущее время: $(date)"
           
-          for expiry_file in *.expiry; do
+          EXPIRED_COUNT=0
+          ACTIVE_COUNT=0
+          
+          for expiry_file in subscriptions/*.expiry; do
             if [ ! -f "$expiry_file" ]; then
               continue
             fi
             
             username=$(basename "$expiry_file" .expiry)
-            data_file="${username}.txt"
+            data_file="subscriptions/${username}.txt"
             EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
             
             if [ $NOW -gt $EXPIRE ]; then
               echo "❌ $username: истекла"
+              EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
               
+              # Заменяем на пустышку
               cat > "$data_file" << 'EOF'
               #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
               #profile-update-interval: 1440
@@ -39,13 +45,34 @@ jobs:
               EOF
               
               rm -f "$expiry_file"
+            else
+              DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
+              echo "✅ $username: осталось $DAYS_LEFT дней"
+              ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
+            fi
+          done
+          
+          echo "📊 Итог: активных - $ACTIVE_COUNT, истекло - $EXPIRED_COUNT"
+
+      - name: 🧹 Clean old empty subscription files
+        run: |
+          for txt_file in subscriptions/user_*.txt; do
+            if [ ! -f "$txt_file" ]; then
+              continue
+            fi
+            
+            username=$(basename "$txt_file" .txt)
+            expiry_file="subscriptions/${username}.expiry"
+            
+            if [ ! -f "$expiry_file" ]; then
+              if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
+                echo "🧹 Очищаем старую пустышку: $txt_file"
+                rm -f "$txt_file"
+              fi
             fi
           done
 
       - name: 💾 Commit and push
         run: |
           git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add *.txt *.expiry 2>/dev/null || true
-          git diff --quiet && git diff --staged --quiet || git commit -m "⏰ Auto-expire"
-          git push
+          git config user.email
