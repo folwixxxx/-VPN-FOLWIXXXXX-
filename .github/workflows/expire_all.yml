@@ -41,13 +41,11 @@ jobs:
                   echo "❌ $folder/$username: подписка истекла"
                   EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
                   
-                  # Заменяем файл подписки на пустышку
-                  cat > "$data_file" << 'EOF'
-                  #profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
-                  #profile-update-interval: 1440
-                  
-                  vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
-                  EOF
+                  # Заменяем файл подписки на пустышку (без EOF)
+                  echo "#profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" > "$data_file"
+                  echo "#profile-update-interval: 1440" >> "$data_file"
+                  echo "" >> "$data_file"
+                  echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰" >> "$data_file"
                   
                   # Удаляем файл истечения
                   rm -f "$expiry_file"
@@ -286,6 +284,37 @@ jobs:
             done
           fi
           
+          # TRIAL-SUB
+          if [ -f "trial-sub.txt" ] && [ -d "subscriptions/trial-sub" ]; then
+            echo "📁 Обработка TRIAL-SUB (папка trial-sub)"
+            for user_file in subscriptions/trial-sub/user_*.expiry; do
+              if [ ! -f "$user_file" ]; then
+                continue
+              fi
+              
+              username=$(basename "$user_file" .expiry)
+              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
+              if [ $NOW -gt $EXPIRE ]; then
+                continue
+              fi
+              
+              user_txt="subscriptions/trial-sub/${username}.txt"
+              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
+              NEW_HASH=$(md5sum "trial-sub.txt" | cut -d' ' -f1)
+              
+              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
+                cp "trial-sub.txt" "$user_txt"
+                sed -i "s/❀VPN USER❀/❀TRIAL ${username}❀/g" "$user_txt"
+                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
+                echo "🔄 ОБНОВЛЕН: trial-sub/$username"
+                UPDATED_COUNT=$((UPDATED_COUNT + 1))
+              else
+                echo "⏭️ ПРОПУЩЕН: trial-sub/$username - конфиг актуален"
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+              fi
+            done
+          fi
+          
           echo ""
           echo "📊 ИТОГИ ОБНОВЛЕНИЯ:"
           echo "   🔄 Обновлено: $UPDATED_COUNT"
@@ -328,9 +357,3 @@ jobs:
           echo "   📂 trial-sub: $(find subscriptions/trial-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
           echo "   📂 Балансов: $(find balances -name "*.json" 2>/dev/null | wc -l)"
           echo "   📂 Пробников: $(find trials -name "trial_*" 2>/dev/null | wc -l)"
-
-      - name: 📢 Send notification to admin
-        if: steps.check_templates.outputs.templates_changed == 'true' && env.UPDATED_COUNT > 0
-        run: |
-          echo "✅ Обновлено $UPDATED_COUNT подписок"
-          # Тут можно добавить уведомление в Telegram если нужно
