@@ -41,14 +41,19 @@ jobs:
                   echo "❌ $folder/$username: подписка истекла"
                   EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
                   
-                  # Заменяем файл подписки на пустышку (без EOF)
+                  # ПРИНУДИТЕЛЬНО перезаписываем файл .txt на пустышку
                   echo "#profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" > "$data_file"
                   echo "#profile-update-interval: 1440" >> "$data_file"
                   echo "" >> "$data_file"
                   echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰" >> "$data_file"
                   
+                  # Добавляем пустой trojan для совместимости
+                  echo "trojan://expired@0.0.0.0:443#EXPIRED" >> "$data_file"
+                  
                   # Удаляем файл истечения
                   rm -f "$expiry_file"
+                  
+                  echo "   ✅ Заменен на пустышку: $data_file"
                 else
                   DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
                   echo "✅ $folder/$username: подписка активна, осталось $DAYS_LEFT дней"
@@ -73,7 +78,7 @@ jobs:
           # Создаём папки если их нет
           mkdir -p subscriptions/def-sub subscriptions/ultra-sub subscriptions/full-sub subscriptions/fast-sub subscriptions/trial-sub balances trials
           
-          # Очищаем старые файлы-пустышки во ВСЕХ папках
+          # Очищаем старые файлы-пустышки (НЕ УДАЛЯЕМ, просто чистим)
           for folder in def-sub ultra-sub full-sub fast-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
               for txt_file in subscriptions/$folder/user_*.txt; do
@@ -84,11 +89,15 @@ jobs:
                 username=$(basename "$txt_file" .txt)
                 expiry_file="subscriptions/$folder/${username}.expiry"
                 
-                # Если нет файла истечения, значит подписка уже истекла
+                # Если нет файла истечения, проверяем что файл .txt - пустышка
                 if [ ! -f "$expiry_file" ]; then
-                  if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
-                    echo "🧹 Удаляем старый файл-пустышку: $txt_file"
-                    rm -f "$txt_file"
+                  if ! grep -q "ИСТЕКЛА" "$txt_file"; then
+                    # Если не пустышка - заменяем на пустышку
+                    echo "⚠️ Найден файл без expiry: $txt_file, заменяю на пустышку"
+                    echo "#profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" > "$txt_file"
+                    echo "#profile-update-interval: 1440" >> "$txt_file"
+                    echo "" >> "$txt_file"
+                    echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED" >> "$txt_file"
                     CLEANED_COUNT=$((CLEANED_COUNT + 1))
                   fi
                 fi
@@ -97,9 +106,9 @@ jobs:
           done
           
           if [ $CLEANED_COUNT -gt 0 ]; then
-            echo "🧹 Очищено файлов: $CLEANED_COUNT"
+            echo "🧹 Исправлено файлов: $CLEANED_COUNT"
           else
-            echo "🧹 Старых файлов для очистки не найдено"
+            echo "🧹 Все файлы в порядке"
           fi
 
       - name: 💾 Commit and push changes
@@ -159,11 +168,18 @@ jobs:
             exit 0
           fi
           
-          # Обновляем для КАЖДОГО типа подписки
-          # DEF-SUB
-          if [ -f "def-sub.txt" ] && [ -d "subscriptions/def-sub" ]; then
-            echo "📁 Обработка DEF-SUB (папка def-sub)"
-            for user_file in subscriptions/def-sub/user_*.expiry; do
+          # Функция обновления для каждого типа
+          update_type() {
+            local template=$1
+            local type_name=$2
+            local folder=$3
+            
+            if [ ! -f "$template" ] || [ ! -d "subscriptions/$folder" ]; then
+              return
+            fi
+            
+            echo "📁 Обработка $type_name (папка $folder)"
+            for user_file in subscriptions/$folder/user_*.expiry; do
               if [ ! -f "$user_file" ]; then
                 continue
               fi
@@ -174,152 +190,28 @@ jobs:
                 continue
               fi
               
-              user_txt="subscriptions/def-sub/${username}.txt"
-              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
-              NEW_HASH=$(md5sum "def-sub.txt" | cut -d' ' -f1)
+              user_txt="subscriptions/$folder/${username}.txt"
               
-              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-                cp "def-sub.txt" "$user_txt"
-                sed -i "s/❀VPN USER❀/❀DEF-SUB ${username}❀/g" "$user_txt"
-                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-                echo "🔄 ОБНОВЛЕН: def-sub/$username"
-                UPDATED_COUNT=$((UPDATED_COUNT + 1))
-              else
-                echo "⏭️ ПРОПУЩЕН: def-sub/$username - конфиг актуален"
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              fi
+              # Принудительно копируем шаблон
+              cp "$template" "$user_txt"
+              sed -i "s/❀VPN USER❀/❀${type_name} ${username}❀/g" "$user_txt"
+              echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
+              
+              echo "🔄 ОБНОВЛЕН: $folder/$username"
+              UPDATED_COUNT=$((UPDATED_COUNT + 1))
             done
-          fi
+          }
           
-          # ULTRA-SUB
-          if [ -f "ultra-sub.txt" ] && [ -d "subscriptions/ultra-sub" ]; then
-            echo "📁 Обработка ULTRA-SUB (папка ultra-sub)"
-            for user_file in subscriptions/ultra-sub/user_*.expiry; do
-              if [ ! -f "$user_file" ]; then
-                continue
-              fi
-              
-              username=$(basename "$user_file" .expiry)
-              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
-              if [ $NOW -gt $EXPIRE ]; then
-                continue
-              fi
-              
-              user_txt="subscriptions/ultra-sub/${username}.txt"
-              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
-              NEW_HASH=$(md5sum "ultra-sub.txt" | cut -d' ' -f1)
-              
-              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-                cp "ultra-sub.txt" "$user_txt"
-                sed -i "s/❀VPN USER❀/❀ULTRA-SUB ${username}❀/g" "$user_txt"
-                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-                echo "🔄 ОБНОВЛЕН: ultra-sub/$username"
-                UPDATED_COUNT=$((UPDATED_COUNT + 1))
-              else
-                echo "⏭️ ПРОПУЩЕН: ultra-sub/$username - конфиг актуален"
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              fi
-            done
-          fi
-          
-          # FULL-SUB (template.txt)
-          if [ -f "template.txt" ] && [ -d "subscriptions/full-sub" ]; then
-            echo "📁 Обработка FULL-SUB (папка full-sub)"
-            for user_file in subscriptions/full-sub/user_*.expiry; do
-              if [ ! -f "$user_file" ]; then
-                continue
-              fi
-              
-              username=$(basename "$user_file" .expiry)
-              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
-              if [ $NOW -gt $EXPIRE ]; then
-                continue
-              fi
-              
-              user_txt="subscriptions/full-sub/${username}.txt"
-              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
-              NEW_HASH=$(md5sum "template.txt" | cut -d' ' -f1)
-              
-              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-                cp "template.txt" "$user_txt"
-                sed -i "s/❀VPN USER❀/❀FULL-SUB ${username}❀/g" "$user_txt"
-                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-                echo "🔄 ОБНОВЛЕН: full-sub/$username"
-                UPDATED_COUNT=$((UPDATED_COUNT + 1))
-              else
-                echo "⏭️ ПРОПУЩЕН: full-sub/$username - конфиг актуален"
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              fi
-            done
-          fi
-          
-          # FAST-SUB
-          if [ -f "fast-sub.txt" ] && [ -d "subscriptions/fast-sub" ]; then
-            echo "📁 Обработка FAST-SUB (папка fast-sub)"
-            for user_file in subscriptions/fast-sub/user_*.expiry; do
-              if [ ! -f "$user_file" ]; then
-                continue
-              fi
-              
-              username=$(basename "$user_file" .expiry)
-              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
-              if [ $NOW -gt $EXPIRE ]; then
-                continue
-              fi
-              
-              user_txt="subscriptions/fast-sub/${username}.txt"
-              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
-              NEW_HASH=$(md5sum "fast-sub.txt" | cut -d' ' -f1)
-              
-              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-                cp "fast-sub.txt" "$user_txt"
-                sed -i "s/❀VPN USER❀/❀FAST-SUB ${username}❀/g" "$user_txt"
-                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-                echo "🔄 ОБНОВЛЕН: fast-sub/$username"
-                UPDATED_COUNT=$((UPDATED_COUNT + 1))
-              else
-                echo "⏭️ ПРОПУЩЕН: fast-sub/$username - конфиг актуален"
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              fi
-            done
-          fi
-          
-          # TRIAL-SUB
-          if [ -f "trial-sub.txt" ] && [ -d "subscriptions/trial-sub" ]; then
-            echo "📁 Обработка TRIAL-SUB (папка trial-sub)"
-            for user_file in subscriptions/trial-sub/user_*.expiry; do
-              if [ ! -f "$user_file" ]; then
-                continue
-              fi
-              
-              username=$(basename "$user_file" .expiry)
-              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
-              if [ $NOW -gt $EXPIRE ]; then
-                continue
-              fi
-              
-              user_txt="subscriptions/trial-sub/${username}.txt"
-              CURRENT_HASH=$(md5sum "$user_txt" 2>/dev/null | cut -d' ' -f1)
-              NEW_HASH=$(md5sum "trial-sub.txt" | cut -d' ' -f1)
-              
-              if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-                cp "trial-sub.txt" "$user_txt"
-                sed -i "s/❀VPN USER❀/❀TRIAL ${username}❀/g" "$user_txt"
-                echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-                echo "🔄 ОБНОВЛЕН: trial-sub/$username"
-                UPDATED_COUNT=$((UPDATED_COUNT + 1))
-              else
-                echo "⏭️ ПРОПУЩЕН: trial-sub/$username - конфиг актуален"
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              fi
-            done
-          fi
+          # Обновляем все типы
+          update_type "def-sub.txt" "DEF-SUB" "def-sub"
+          update_type "ultra-sub.txt" "ULTRA-SUB" "ultra-sub"
+          update_type "template.txt" "FULL-SUB" "full-sub"
+          update_type "fast-sub.txt" "FAST-SUB" "fast-sub"
+          update_type "trial-sub.txt" "TRIAL" "trial-sub"
           
           echo ""
           echo "📊 ИТОГИ ОБНОВЛЕНИЯ:"
           echo "   🔄 Обновлено: $UPDATED_COUNT"
-          echo "   ⏭️ Пропущено (актуальны): $SKIPPED_COUNT"
-          echo "   ❌ Ошибок: $ERROR_COUNT"
           
           echo "UPDATED_COUNT=$UPDATED_COUNT" >> $GITHUB_ENV
       
@@ -329,11 +221,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Добавляем все изменения
           git add subscriptions/ 2>/dev/null || true
-          git add -u 2>/dev/null || true
           
-          # Коммитим, если есть изменения
           if ! git diff --quiet --staged; then
             if [ $UPDATED_COUNT -gt 0 ]; then
               git commit -m "🔄 Auto-update $UPDATED_COUNT active subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
@@ -341,9 +230,7 @@ jobs:
               git commit -m "🔄 Auto-update active subscriptions (no changes) $(date +'%Y-%m-%d %H:%M:%S')"
             fi
             git push
-            echo "✅ Изменения отправлены в репозиторий"
-          else
-            echo "ℹ️ Нет изменений для сохранения"
+            echo "✅ Изменения отправлены"
           fi
       
       - name: 📊 Show repository stats
@@ -355,5 +242,3 @@ jobs:
           echo "   📂 full-sub: $(find subscriptions/full-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
           echo "   📂 fast-sub: $(find subscriptions/fast-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
           echo "   📂 trial-sub: $(find subscriptions/trial-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
-          echo "   📂 Балансов: $(find balances -name "*.json" 2>/dev/null | wc -l)"
-          echo "   📂 Пробников: $(find trials -name "trial_*" 2>/dev/null | wc -l)"
