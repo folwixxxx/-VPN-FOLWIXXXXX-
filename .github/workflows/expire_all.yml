@@ -1,12 +1,14 @@
-name: Auto-Expire All Subscriptions
+name: Auto-Expire and Update Subscriptions
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+    - cron: '*/5 * * * *'      # Проверка истечения каждые 5 минут
+    - cron: '0 */6 * * *'      # Обновление конфигов каждые 6 часов
+  workflow_dispatch:            # Ручной запуск
 
 jobs:
-  expire-all:
+  # JOB 1: Проверка истечения подписок (каждые 5 минут)
+  expire-subscriptions:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -68,7 +70,7 @@ jobs:
         run: |
           CLEANED_COUNT=0
           
-          # Очищаем старые файлы-пустышки, у которых нет файла истечения
+          # Очищаем старые файлы-пустышки
           if [ -d "subscriptions" ]; then
             for txt_file in subscriptions/user_*.txt; do
               if [ ! -f "$txt_file" ]; then
@@ -80,7 +82,6 @@ jobs:
               
               # Если нет файла истечения, значит подписка уже истекла
               if [ ! -f "$expiry_file" ]; then
-                # Проверяем, что это пустышка
                 if grep -q "ПОДПИСКА ИСТЕКЛА" "$txt_file"; then
                   echo "🧹 Удаляем старый файл-пустышку: $txt_file"
                   rm -f "$txt_file"
@@ -93,58 +94,8 @@ jobs:
           # Создаём папки, если их нет
           mkdir -p balances trials
           
-          # Удаляем очень старые файлы пробного периода (старше 90 дней)
-          if [ -d "trials" ]; then
-            for trial_file in trials/trial_*; do
-              if [ ! -f "$trial_file" ]; then
-                continue
-              fi
-              
-              # Проверяем возраст файла
-              if command -v stat &> /dev/null; then
-                FILE_AGE=$(($(date +%s) - $(stat -c %Y "$trial_file" 2>/dev/null || stat -f %m "$trial_file" 2>/dev/null)))
-                if [ $FILE_AGE -gt 7776000 ]; then  # 90 дней
-                  echo "🧹 Удаляем старый trial-файл: $trial_file (возраст $((FILE_AGE / 86400)) дней)"
-                  rm -f "$trial_file"
-                  CLEANED_COUNT=$((CLEANED_COUNT + 1))
-                fi
-              fi
-            done
-          fi
-          
           if [ $CLEANED_COUNT -gt 0 ]; then
             echo "🧹 Очищено файлов: $CLEANED_COUNT"
-          else
-            echo "🧹 Старых файлов для очистки не найдено"
-          fi
-
-      - name: 📊 Show repository stats
-        run: |
-          echo ""
-          echo "📁 ТЕКУЩЕЕ СОСТОЯНИЕ РЕПОЗИТОРИЯ:"
-          
-          if [ -d "subscriptions" ]; then
-            SUB_COUNT=$(ls -1 subscriptions/*.txt 2>/dev/null | wc -l)
-            echo "   📂 Подписки: $SUB_COUNT активных"
-          else
-            echo "   📂 Подписки: папка не создана"
-            mkdir -p subscriptions
-          fi
-          
-          if [ -d "balances" ]; then
-            BAL_COUNT=$(ls -1 balances/*.json 2>/dev/null | wc -l)
-            echo "   📂 Балансы: $BAL_COUNT пользователей"
-          else
-            echo "   📂 Балансы: папка не создана"
-            mkdir -p balances
-          fi
-          
-          if [ -d "trials" ]; then
-            TRIAL_COUNT=$(ls -1 trials/trial_* 2>/dev/null | wc -l)
-            echo "   📂 Пробники: $TRIAL_COUNT использовано"
-          else
-            echo "   📂 Пробники: папка не создана"
-            mkdir -p trials
           fi
 
       - name: 💾 Commit and push changes
@@ -152,15 +103,190 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Добавляем все изменения и новые папки
           git add subscriptions/ balances/ trials/ 2>/dev/null || true
+          git add -u 2>/dev/null || true
+          
+          if ! git diff --quiet --staged; then
+            git commit -m "⏰ Auto-expire subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+            echo "✅ Изменения отправлены"
+          else
+            echo "ℹ️ Нет изменений"
+          fi
+
+  # JOB 2: Обновление конфигов активных подписок (каждые 6 часов)
+  update-active-configs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: 🔄 Check if templates changed
+        id: check_templates
+        run: |
+          # Проверяем, изменились ли файлы шаблонов за последние 6 часов
+          if git diff --name-only HEAD~1 | grep -E "(def-sub\.txt|ultra-sub\.txt|template\.txt|fast-sub\.txt|trial-sub\.txt)$" > /dev/null; then
+            echo "templates_changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Обнаружены изменения в шаблонах"
+          else
+            echo "templates_changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Шаблоны не изменились"
+          fi
+      
+      - name: 🔄 Update active subscriptions
+        if: steps.check_templates.outputs.templates_changed == 'true'
+        run: |
+          NOW=$(date +%s)
+          UPDATED_COUNT=0
+          SKIPPED_COUNT=0
+          ERROR_COUNT=0
+          
+          echo "🔄 НАЧАЛО ОБНОВЛЕНИЯ АКТИВНЫХ ПОДПИСОК"
+          echo "📅 Время: $(date)"
+          echo ""
+          
+          if [ ! -d "subscriptions" ]; then
+            echo "⚠️ Папка subscriptions не найдена"
+            exit 0
+          fi
+          
+          # Обходим все файлы истечения
+          for expiry_file in subscriptions/*.expiry; do
+            if [ ! -f "$expiry_file" ]; then
+              continue
+            fi
+            
+            # Получаем имя пользователя
+            username=$(basename "$expiry_file" .expiry)
+            
+            # Проверяем, активна ли подписка
+            EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
+            if [ $NOW -gt $EXPIRE ]; then
+              # Подписка истекла - пропускаем
+              continue
+            fi
+            
+            # Определяем тип подписки из файла .type
+            type_file="subscriptions/${username}.type"
+            if [ -f "$type_file" ]; then
+              SUB_TYPE=$(cat "$type_file" | tr -d ' \n\r')
+            else
+              # Если файл типа не найден, пробуем определить по содержимому
+              txt_file="subscriptions/${username}.txt"
+              if [ -f "$txt_file" ]; then
+                if grep -q "FAST-SUB" "$txt_file"; then
+                  SUB_TYPE="fast"
+                elif grep -q "ULTRA-SUB" "$txt_file"; then
+                  SUB_TYPE="ultra"
+                elif grep -q "DEF-SUB" "$txt_file"; then
+                  SUB_TYPE="def"
+                else
+                  SUB_TYPE="full"
+                fi
+                # Сохраняем тип для будущих обновлений
+                echo "$SUB_TYPE" > "$type_file"
+              else
+                SUB_TYPE="full"
+              fi
+            fi
+            
+            # Определяем файл шаблона в зависимости от типа
+            case "$SUB_TYPE" in
+              "def")
+                template_file="def-sub.txt"
+                ;;
+              "ultra")
+                template_file="ultra-sub.txt"
+                ;;
+              "fast")
+                template_file="fast-sub.txt"
+                ;;
+              "full")
+                template_file="template.txt"
+                ;;
+              "trial")
+                template_file="trial-sub.txt"
+                ;;
+              *)
+                template_file="template.txt"
+                ;;
+            esac
+            
+            # Проверяем, существует ли файл шаблона
+            if [ ! -f "$template_file" ]; then
+              echo "⚠️ Шаблон $template_file не найден для $username"
+              ERROR_COUNT=$((ERROR_COUNT + 1))
+              continue
+            fi
+            
+            # Сравниваем хеши (обновляем только если есть изменения)
+            user_file="subscriptions/${username}.txt"
+            CURRENT_HASH=""
+            if [ -f "$user_file" ]; then
+              CURRENT_HASH=$(md5sum "$user_file" | cut -d' ' -f1)
+            fi
+            NEW_HASH=$(md5sum "$template_file" | cut -d' ' -f1)
+            
+            if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
+              # Копируем новый конфиг
+              cp "$template_file" "$user_file"
+              
+              # Обновляем имя пользователя в файле
+              sed -i "s/❀VPN USER❀/❀${SUB_TYPE^^}-SUB ${username}❀/g" "$user_file"
+              
+              # Добавляем дату обновления в комментарий
+              echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_file"
+              
+              echo "🔄 ОБНОВЛЕН: $username (${SUB_TYPE})"
+              UPDATED_COUNT=$((UPDATED_COUNT + 1))
+            else
+              echo "⏭️ ПРОПУЩЕН: $username (${SUB_TYPE}) - конфиг актуален"
+              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+            fi
+          done
+          
+          echo ""
+          echo "📊 ИТОГИ ОБНОВЛЕНИЯ:"
+          echo "   🔄 Обновлено: $UPDATED_COUNT"
+          echo "   ⏭️ Пропущено (актуальны): $SKIPPED_COUNT"
+          echo "   ❌ Ошибок: $ERROR_COUNT"
+          
+          echo "UPDATED_COUNT=$UPDATED_COUNT" >> $GITHUB_ENV
+      
+      - name: 💾 Commit and push updates
+        if: steps.check_templates.outputs.templates_changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Добавляем все изменения
+          git add subscriptions/ 2>/dev/null || true
           git add -u 2>/dev/null || true
           
           # Коммитим, если есть изменения
           if ! git diff --quiet --staged; then
-            git commit -m "⏰ Auto-expire subscriptions and cleanup $(date +'%Y-%m-%d %H:%M:%S')"
+            if [ $UPDATED_COUNT -gt 0 ]; then
+              git commit -m "🔄 Auto-update $UPDATED_COUNT active subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
+            else
+              git commit -m "🔄 Auto-update active subscriptions (no changes) $(date +'%Y-%m-%d %H:%M:%S')"
+            fi
             git push
             echo "✅ Изменения отправлены в репозиторий"
           else
             echo "ℹ️ Нет изменений для сохранения"
           fi
+      
+      - name: 📊 Show repository stats
+        run: |
+          echo ""
+          echo "📁 ТЕКУЩЕЕ СОСТОЯНИЕ РЕПОЗИТОРИЯ:"
+          echo "   📂 Активных подписок: $(find subscriptions -name "*.expiry" 2>/dev/null | wc -l)"
+          echo "   📂 Файлов конфигов: $(find subscriptions -name "*.txt" 2>/dev/null | wc -l)"
+          echo "   📂 Файлов типов: $(find subscriptions -name "*.type" 2>/dev/null | wc -l)"
+          echo "   📂 Балансов: $(find balances -name "*.json" 2>/dev/null | wc -l)"
+          echo "   📂 Пробников: $(find trials -name "trial_*" 2>/dev/null | wc -l)"
