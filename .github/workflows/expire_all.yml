@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # JOB 1: Проверка истечения подписок (каждые 5 минут)
   expire-subscriptions:
     runs-on: ubuntu-latest
     permissions:
@@ -25,7 +24,6 @@ jobs:
           EXPIRED_COUNT=0
           ACTIVE_COUNT=0
           
-          # Проверяем ВСЕ папки с подписками
           for folder in def-sub ultra-sub full-sub fast-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
               for expiry_file in subscriptions/$folder/*.expiry; do
@@ -36,98 +34,72 @@ jobs:
                 username=$(basename "$expiry_file" .expiry)
                 data_file="subscriptions/$folder/${username}.txt"
                 EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
+                EXPIRE_DATE=$(date -d "@$EXPIRE" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "unknown")
                 
                 if [ $NOW -gt $EXPIRE ]; then
-                  echo "❌ $folder/$username: подписка истекла"
+                  echo "❌ $folder/$username: подписка истекла (была до $EXPIRE_DATE)"
                   EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
                   
-                  # ПРИНУДИТЕЛЬНО перезаписываем файл .txt на пустышку
-                  echo "#profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" > "$data_file"
-                  echo "#profile-update-interval: 1440" >> "$data_file"
-                  echo "" >> "$data_file"
-                  echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰" >> "$data_file"
+                  # Пустышка с информацией об истечении
+                  cat > "$data_file" << EOF
+# profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+# profile-update-interval: 1440
+# expired: $EXPIRE_DATE
+# status: EXPIRED
+
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#⏰%20ПОДПИСКА%20ИСТЕКЛА%20⏰
+trojan://expired@0.0.0.0:443#EXPIRED
+EOF
                   
-                  # Добавляем пустой trojan для совместимости
-                  echo "trojan://expired@0.0.0.0:443#EXPIRED" >> "$data_file"
-                  
-                  # Удаляем файл истечения
                   rm -f "$expiry_file"
-                  
                   echo "   ✅ Заменен на пустышку: $data_file"
                 else
                   DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
-                  echo "✅ $folder/$username: подписка активна, осталось $DAYS_LEFT дней"
+                  echo "✅ $folder/$username: активна до $EXPIRE_DATE, осталось $DAYS_LEFT дней"
                   ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
                 fi
               done
             else
-              echo "⚠️ Папка subscriptions/$folder не найдена, создаю..."
               mkdir -p "subscriptions/$folder"
             fi
           done
           
           echo ""
-          echo "📊 ИТОГИ ПРОВЕРКИ:"
-          echo "   ✅ Активных подписок: $ACTIVE_COUNT"
-          echo "   ❌ Истекших подписок: $EXPIRED_COUNT"
+          echo "📊 ИТОГИ: Активных: $ACTIVE_COUNT, Истекших: $EXPIRED_COUNT"
 
-      - name: 🧹 Clean old empty subscription files
+      - name: 🧹 Clean orphaned files
         run: |
-          CLEANED_COUNT=0
-          
-          # Создаём папки если их нет
-          mkdir -p subscriptions/def-sub subscriptions/ultra-sub subscriptions/full-sub subscriptions/fast-sub subscriptions/trial-sub balances trials
-          
-          # Очищаем старые файлы-пустышки (НЕ УДАЛЯЕМ, просто чистим)
           for folder in def-sub ultra-sub full-sub fast-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
               for txt_file in subscriptions/$folder/user_*.txt; do
-                if [ ! -f "$txt_file" ]; then
-                  continue
-                fi
-                
+                [ ! -f "$txt_file" ] && continue
                 username=$(basename "$txt_file" .txt)
                 expiry_file="subscriptions/$folder/${username}.expiry"
-                
-                # Если нет файла истечения, проверяем что файл .txt - пустышка
-                if [ ! -f "$expiry_file" ]; then
-                  if ! grep -q "ИСТЕКЛА" "$txt_file"; then
-                    # Если не пустышка - заменяем на пустышку
-                    echo "⚠️ Найден файл без expiry: $txt_file, заменяю на пустышку"
-                    echo "#profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" > "$txt_file"
-                    echo "#profile-update-interval: 1440" >> "$txt_file"
-                    echo "" >> "$txt_file"
-                    echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED" >> "$txt_file"
-                    CLEANED_COUNT=$((CLEANED_COUNT + 1))
-                  fi
+                if [ ! -f "$expiry_file" ] && ! grep -q "ИСТЕКЛА" "$txt_file"; then
+                  echo "⚠️ Исправляю: $txt_file"
+                  cat > "$txt_file" << EOF
+# profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
+# profile-update-interval: 1440
+# status: EXPIRED
+
+vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED
+EOF
                 fi
               done
             fi
           done
-          
-          if [ $CLEANED_COUNT -gt 0 ]; then
-            echo "🧹 Исправлено файлов: $CLEANED_COUNT"
-          else
-            echo "🧹 Все файлы в порядке"
-          fi
 
-      - name: 💾 Commit and push changes
+      - name: 💾 Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
           git add subscriptions/ balances/ trials/ 2>/dev/null || true
           git add -u 2>/dev/null || true
-          
           if ! git diff --quiet --staged; then
-            git commit -m "⏰ Auto-expire subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
+            git commit -m "⏰ Auto-expire $(date +'%Y-%m-%d %H:%M:%S')"
             git push
-            echo "✅ Изменения отправлены в репозиторий"
-          else
-            echo "ℹ️ Нет изменений для сохранения"
           fi
 
-  # JOB 2: Обновление конфигов активных подписок (каждые 6 часов)
   update-active-configs:
     runs-on: ubuntu-latest
     permissions:
@@ -139,106 +111,55 @@ jobs:
         with:
           fetch-depth: 2
       
-      - name: 🔄 Check if templates changed
+      - name: 🔄 Check templates changed
         id: check_templates
         run: |
-          # Проверяем, изменились ли файлы шаблонов за последние 6 часов
           if git diff --name-only HEAD~1 | grep -E "(def-sub\.txt|ultra-sub\.txt|template\.txt|fast-sub\.txt|trial-sub\.txt)$" > /dev/null; then
-            echo "templates_changed=true" >> $GITHUB_OUTPUT
-            echo "✅ Обнаружены изменения в шаблонах"
+            echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "templates_changed=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ Шаблоны не изменились"
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
       
       - name: 🔄 Update active subscriptions
-        if: steps.check_templates.outputs.templates_changed == 'true'
+        if: steps.check_templates.outputs.changed == 'true'
         run: |
           NOW=$(date +%s)
-          UPDATED_COUNT=0
-          SKIPPED_COUNT=0
-          ERROR_COUNT=0
+          UPDATED=0
           
-          echo "🔄 НАЧАЛО ОБНОВЛЕНИЯ АКТИВНЫХ ПОДПИСОК"
-          echo "📅 Время: $(date)"
-          echo ""
-          
-          if [ ! -d "subscriptions" ]; then
-            echo "⚠️ Папка subscriptions не найдена"
-            exit 0
-          fi
-          
-          # Функция обновления для каждого типа
           update_type() {
             local template=$1
             local type_name=$2
             local folder=$3
+            [ ! -f "$template" ] && return
+            [ ! -d "subscriptions/$folder" ] && return
             
-            if [ ! -f "$template" ] || [ ! -d "subscriptions/$folder" ]; then
-              return
-            fi
-            
-            echo "📁 Обработка $type_name (папка $folder)"
-            for user_file in subscriptions/$folder/user_*.expiry; do
-              if [ ! -f "$user_file" ]; then
-                continue
-              fi
-              
-              username=$(basename "$user_file" .expiry)
-              EXPIRE=$(cat "$user_file" | tr -d ' \n\r')
-              if [ $NOW -gt $EXPIRE ]; then
-                continue
-              fi
-              
-              user_txt="subscriptions/$folder/${username}.txt"
-              
-              # Принудительно копируем шаблон
-              cp "$template" "$user_txt"
-              sed -i "s/❀VPN USER❀/❀${type_name} ${username}❀/g" "$user_txt"
-              echo "# Обновлено автоматически: $(date '+%Y-%m-%d %H:%M:%S')" >> "$user_txt"
-              
-              echo "🔄 ОБНОВЛЕН: $folder/$username"
-              UPDATED_COUNT=$((UPDATED_COUNT + 1))
+            for expiry in subscriptions/$folder/*.expiry; do
+              [ ! -f "$expiry" ] && continue
+              EXPIRE=$(cat "$expiry")
+              [ $EXPIRE -lt $NOW ] && continue
+              username=$(basename "$expiry" .expiry)
+              cp "$template" "subscriptions/$folder/${username}.txt"
+              sed -i "s/❀VPN USER❀/❀${type_name} ${username}❀/g" "subscriptions/$folder/${username}.txt"
+              echo "# Обновлено: $(date '+%Y-%m-%d %H:%M:%S')" >> "subscriptions/$folder/${username}.txt"
+              UPDATED=$((UPDATED + 1))
             done
           }
           
-          # Обновляем все типы
           update_type "def-sub.txt" "DEF-SUB" "def-sub"
           update_type "ultra-sub.txt" "ULTRA-SUB" "ultra-sub"
           update_type "template.txt" "FULL-SUB" "full-sub"
           update_type "fast-sub.txt" "FAST-SUB" "fast-sub"
           update_type "trial-sub.txt" "TRIAL" "trial-sub"
           
-          echo ""
-          echo "📊 ИТОГИ ОБНОВЛЕНИЯ:"
-          echo "   🔄 Обновлено: $UPDATED_COUNT"
-          
-          echo "UPDATED_COUNT=$UPDATED_COUNT" >> $GITHUB_ENV
-      
-      - name: 💾 Commit and push updates
-        if: steps.check_templates.outputs.templates_changed == 'true'
+          echo "📊 Обновлено: $UPDATED"
+
+      - name: 💾 Commit updates
+        if: steps.check_templates.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          git add subscriptions/ 2>/dev/null || true
-          
+          git add subscriptions/
           if ! git diff --quiet --staged; then
-            if [ $UPDATED_COUNT -gt 0 ]; then
-              git commit -m "🔄 Auto-update $UPDATED_COUNT active subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
-            else
-              git commit -m "🔄 Auto-update active subscriptions (no changes) $(date +'%Y-%m-%d %H:%M:%S')"
-            fi
+            git commit -m "🔄 Auto-update subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
             git push
-            echo "✅ Изменения отправлены"
           fi
-      
-      - name: 📊 Show repository stats
-        run: |
-          echo ""
-          echo "📁 ТЕКУЩЕЕ СОСТОЯНИЕ РЕПОЗИТОРИЯ:"
-          echo "   📂 def-sub: $(find subscriptions/def-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
-          echo "   📂 ultra-sub: $(find subscriptions/ultra-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
-          echo "   📂 full-sub: $(find subscriptions/full-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
-          echo "   📂 fast-sub: $(find subscriptions/fast-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
-          echo "   📂 trial-sub: $(find subscriptions/trial-sub -name "*.expiry" 2>/dev/null | wc -l) активных"
