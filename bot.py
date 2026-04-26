@@ -13,12 +13,16 @@ from flask import Flask, request, Response
 
 # ==================== ТОКЕНЫ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ====================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")        # нужен для записи, чтение с raw – без токена
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
-SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")   # для токенов (оставляем)
+SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
+
+# ==================== КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ====================
+REQUIRED_CHANNEL = "folwixxxvpn"  # без @, имя канала
+CHANNEL_URL = f"https://t.me/{REQUIRED_CHANNEL}"
 
 # Проверка
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
@@ -32,6 +36,51 @@ YOUR_ADMIN_ID = 8684879669
 YOUR_USERNAME = "ylvvvl"
 
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
+
+# ==================== ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ НА КАНАЛ ====================
+def is_subscribed(user_id):
+    """Проверяет, подписан ли пользователь на обязательный канал"""
+    try:
+        member = bot.get_chat_member(f"@{REQUIRED_CHANNEL}", user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except Exception as e:
+        print(f"Ошибка проверки подписки: {e}")
+        # Если бот не может проверить (нет прав), лучше пропустить проверку, но для безопасности считаем не подписанным
+        return False
+
+def require_subscription(func):
+    """Декоратор для команд: требует подписки на канал перед выполнением"""
+    def wrapper(message):
+        user_id = message.from_user.id
+        if not is_subscribed(user_id):
+            keyboard = InlineKeyboardMarkup()
+            keyboard.add(InlineKeyboardButton("📢 Подписаться на канал", url=CHANNEL_URL))
+            keyboard.add(InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"))
+            bot.send_message(
+                message.chat.id,
+                f"❌ **Доступ ограничен!**\n\n"
+                f"Для использования бота вы должны быть подписаны на наш новостной канал.\n\n"
+                f"👉 Подпишитесь и нажмите «✅ Я подписался».",
+                reply_markup=keyboard,
+                parse_mode='Markdown'
+            )
+            return
+        return func(message)
+    return wrapper
+
+@bot.callback_query_handler(func=lambda call: call.data == "check_subscription")
+def check_subscription_callback(call):
+    """Обработчик кнопки «Я подписался» – повторная проверка подписки"""
+    user_id = call.from_user.id
+    if is_subscribed(user_id):
+        bot.edit_message_text(
+            "✅ Спасибо за подписку! Теперь вы можете пользоваться ботом.\n\n"
+            "Введите /start чтобы начать.",
+            call.message.chat.id, call.message.message_id
+        )
+        bot.answer_callback_query(call.id, "Подписка подтверждена!")
+    else:
+        bot.answer_callback_query(call.id, "Вы до сих пор не подписаны. Пожалуйста, подпишитесь и нажмите снова.", show_alert=True)
 
 # ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ (оставляем для обратной совместимости) ====================
 def generate_user_token(user_id, expiry_timestamp):
@@ -75,7 +124,6 @@ def home():
 def health():
     return "OK", 200
 
-# Эндпоинт get_config больше не используется, но оставлен для совместимости (на всякий случай)
 @app.route('/get_config/<int:user_id>')
 def get_user_config(user_id):
     token = request.args.get('token')
@@ -430,8 +478,9 @@ def handle_successful_payment(message):
             )
             bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д")
 
-# ==================== КОМАНДЫ ПОЛЬЗОВАТЕЛЯ ====================
+# ==================== КОМАНДЫ ПОЛЬЗОВАТЕЛЯ (с проверкой подписки) ====================
 @bot.message_handler(commands=['start'])
+@require_subscription
 def start_command(message):
     send_user_info_to_admin(message)
     keyboard = InlineKeyboardMarkup()
@@ -444,7 +493,7 @@ def start_command(message):
         InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     )
     keyboard.row(
-        InlineKeyboardButton("⚠️ Канал с новостями", url="https://t.me/folwixxxvpn")
+        InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL)
     )
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
@@ -465,6 +514,7 @@ def start_command(message):
         bot.send_message(message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['profile'])
+@require_subscription
 def profile_command(message):
     user_id = message.from_user.id
     balance = get_balance(user_id)
@@ -490,6 +540,7 @@ def profile_command(message):
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['buy'])
+@require_subscription
 def buy_command(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.row(
@@ -513,6 +564,7 @@ def buy_command(message):
     )
 
 @bot.message_handler(commands=['trial'])
+@require_subscription
 def trial_command(message):
     user_id = message.from_user.id
     if github_get_file_content(f"trials/trial_{user_id}"):
@@ -537,6 +589,7 @@ def trial_command(message):
         bot.reply_to(message, "❌ Ошибка при активации пробного периода")
 
 @bot.message_handler(commands=['support'])
+@require_subscription
 def support_command(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
@@ -553,6 +606,7 @@ def support_command(message):
     )
 
 @bot.message_handler(commands=['refresh_config'])
+@require_subscription
 def refresh_config_command(message):
     user_id = message.from_user.id
     days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
@@ -576,7 +630,7 @@ def refresh_config_command(message):
     else:
         bot.reply_to(message, "❌ Ошибка при обновлении конфига. Попробуйте позже")
 
-# ==================== КОМАНДЫ АДМИНА ====================
+# ==================== КОМАНДЫ АДМИНА (БЕЗ ПРОВЕРКИ ПОДПИСКИ) ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
     if message.from_user.id != YOUR_ADMIN_ID:
@@ -657,7 +711,6 @@ def renew_all_links(message):
             sub_type = get_user_subscription_type(user_id)
             if not sub_type:
                 sub_type = "full"
-            # Создаём новую подписку (файлы обновятся, токен не используется, но перегенерация ссылки обновит параметр t)
             new_link = create_user_subscription(user_id, days_left, sub_type, is_trial=False)
             if new_link:
                 bot.send_message(
@@ -696,208 +749,106 @@ def check_subs(message):
 # ==================== CALLBACK ОБРАБОТЧИКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'support')
 def support(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    bot.send_message(
-        call.message.chat.id,
-        "🛠️ **Поддержка**\n\n"
-        "Если у вас возникли проблемы с подключением,\n"
-        "вопросы по оплате или другие сложности —\n\n"
-        "Нажмите на кнопку ниже, чтобы написать в поддержку.\n\n"
-        "Мы постараемся ответить как можно быстрее!",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    support_command(call.message)
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'profile')
 def profile(call):
-    user_id = call.from_user.id
-    balance = get_balance(user_id)
-    days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
+    profile_command(call.message)
     bot.answer_callback_query(call.id)
-    keyboard = InlineKeyboardMarkup()
-    if days_left and days_left != "expired" and days_left is not None:
-        keyboard.add(InlineKeyboardButton("🔄 Обновить конфиг", callback_data="refresh_config_profile"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    text = f"👤 **ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ**\n\n"
-    text += f"🆔 ID: `{user_id}`\n"
-    text += f"💰 Баланс: {balance} 💵\n"
-    if days_left is None:
-        text += "📅 Статус: ❌ **Нет активной подписки**"
-    elif days_left == "expired":
-        text += "📅 Статус: ⏰ **Подписка истекла**"
-    else:
-        text += f"📅 Статус: ✅ **Активна**\n"
-        text += f"📅 Осталось дней: {days_left}\n"
-        text += f"📅 Действует до: `{expiry_date}`\n"
-        text += f"🔗 Ссылка для v2rayNG:\n`{subscription_link}`\n\n"
-        text += f"🔄 Конфиг обновляется автоматически каждые 6 часов\n"
-        text += f"⚠️ Если подписка не работает - удалите старую и добавьте эту ссылку заново"
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data == 'refresh_config_profile')
-def refresh_from_profile(call):
-    user_id = call.from_user.id
-    days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
-    if days_left is None or days_left == "expired":
-        bot.answer_callback_query(call.id, "❌ У вас нет активной подписки", show_alert=True)
-        return
-    sub_type = get_user_subscription_type(user_id)
-    if force_update_user_config(user_id, sub_type):
-        _, _, new_link = get_user_subscription_info(user_id)
-        bot.answer_callback_query(call.id, "✅ Конфиг обновлен! Обновите ссылку в приложении", show_alert=True)
-        bot.send_message(
-            call.message.chat.id,
-            f"✅ **Конфиг обновлен!**\n\n"
-            f"🔗 Новая ссылка:\n{new_link}\n\n"
-            f"⚠️ Удалите старую подписку и добавьте эту новую ссылку!\n\n"
-            f"📱 Добавьте ее в v2rayNG"
-        )
-    else:
-        bot.answer_callback_query(call.id, "❌ Ошибка при обновлении", show_alert=True)
+def refresh_profile(call):
+    refresh_config_command(call.message)
+    bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'buy_menu')
 def buy_menu(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("💵 DEF-SUB", callback_data="sub_def"),
-        InlineKeyboardButton("⭐ ULTRA-SUB", callback_data="sub_ultra")
-    )
-    keyboard.row(
-        InlineKeyboardButton("🔑 FULL-SUB", callback_data="sub_full"),
-        InlineKeyboardButton("🛡️ FAST-SUB", callback_data="sub_fast")
-    )
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    bot.send_message(
-        call.message.chat.id,
-        "💎 **Выберите тип подписки:**\n\n"
-        "🪙 DEF-SUB — Только VPN 0.5 TON / 50⭐ / 50💵\n"
-        "⭐ ULTRA-SUB — Лучшие серверы 0.7 TON / 75⭐ / 75💵\n"
-        "🔑 FULL-SUB — Все серверы 1 TON / 100⭐ / 100💵\n"
-        "🛡️ FAST-SUB — Максимальная скорость 1.5 TON / 150⭐ / 150💵",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    buy_command(call.message)
     bot.answer_callback_query(call.id)
 
-# ==================== ВСЕ ТАРИФЫ (колбэки) ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_fast')
-def sub_fast(call):
-    text = "🛡️ **FAST-SUB** — Максимальная скорость\n\n💰 **Цены:**\n• 30 дней — 1.5 TON / 150⭐ / 150💵\n• 60 дней — 2.5 TON / 250⭐ / 250💵\n• 90 дней — 3.5 TON / 350⭐ / 350💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("📆 30 дней", callback_data="fast_30"),
-        InlineKeyboardButton("📆 60 дней", callback_data="fast_60"),
-        InlineKeyboardButton("📆 90 дней", callback_data="fast_90")
-    )
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+@bot.callback_query_handler(func=lambda call: call.data == 'trial')
+def trial(call):
+    trial_command(call.message)
     bot.answer_callback_query(call.id)
 
-@bot.callback_query_handler(func=lambda call: call.data == 'fast_30')
-def fast_30(call): process_subscription(call, "fast", 30, 1.5, 150, 150)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'fast_60')
-def fast_60(call): process_subscription(call, "fast", 60, 2.5, 250, 250)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'fast_90')
-def fast_90(call): process_subscription(call, "fast", 90, 3.5, 350, 350)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_full')
-def sub_full(call):
-    text = "🔑 **FULL-SUB** — Все серверы\n\n💰 **Цены:**\n• 30 дней — 1 TON / 100⭐ / 100💵\n• 60 дней — 1.75 TON / 170⭐ / 170💵\n• 90 дней — 2.5 TON / 250⭐ / 275💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("📆 30 дней", callback_data="full_30"),
-        InlineKeyboardButton("📆 60 дней", callback_data="full_60"),
-        InlineKeyboardButton("📆 90 дней", callback_data="full_90")
-    )
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+@bot.callback_query_handler(func=lambda call: call.data == 'back_to_main')
+def back_main(call):
+    start_command(call.message)
     bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'full_30')
-def full_30(call): process_subscription(call, "full", 30, 1, 100, 100)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'full_60')
-def full_60(call): process_subscription(call, "full", 60, 1.75, 170, 170)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'full_90')
-def full_90(call): process_subscription(call, "full", 90, 2.5, 250, 275)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_def')
-def sub_def(call):
-    text = "💵 **DEF-SUB** — Только VPN\n\n💰 **Цены:**\n• 30 дней — 0.5 TON / 50⭐ / 50💵\n• 60 дней — 0.9 TON / 85⭐ / 90💵\n• 90 дней — 1.25 TON / 120⭐ / 135💵\n\nВыберите период:"
+def sub_def_menu(call):
+    text = "💵 **DEF-SUB**\n\n30д — 0.5 TON / 50⭐\n60д — 0.9 TON / 85⭐\n90д — 1.25 TON / 120⭐"
     keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("📆 30 дней", callback_data="def_30"),
-        InlineKeyboardButton("📆 60 дней", callback_data="def_60"),
-        InlineKeyboardButton("📆 90 дней", callback_data="def_90")
-    )
+    keyboard.row(InlineKeyboardButton("📆 30", callback_data="def_30"), InlineKeyboardButton("📆 60", callback_data="def_60"), InlineKeyboardButton("📆 90", callback_data="def_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'def_30')
-def def_30(call): process_subscription(call, "def", 30, 0.5, 50, 50)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'def_60')
-def def_60(call): process_subscription(call, "def", 60, 0.9, 85, 90)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'def_90')
-def def_90(call): process_subscription(call, "def", 90, 1.25, 120, 135)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_ultra')
-def sub_ultra(call):
-    text = "⭐ **ULTRA-SUB** — Лучшие серверы\n\n💰 **Цены:**\n• 30 дней — 0.7 TON / 75⭐ / 75💵\n• 60 дней — 1.2 TON / 120⭐ / 130💵\n• 90 дней — 1.7 TON / 170⭐ / 190💵\n\nВыберите период:"
+def sub_ultra_menu(call):
+    text = "⭐ **ULTRA-SUB**\n\n30д — 0.7 TON / 75⭐\n60д — 1.2 TON / 120⭐\n90д — 1.7 TON / 170⭐"
     keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("📆 30 дней", callback_data="ultra_30"),
-        InlineKeyboardButton("📆 60 дней", callback_data="ultra_60"),
-        InlineKeyboardButton("📆 90 дней", callback_data="ultra_90")
-    )
+    keyboard.row(InlineKeyboardButton("📆 30", callback_data="ultra_30"), InlineKeyboardButton("📆 60", callback_data="ultra_60"), InlineKeyboardButton("📆 90", callback_data="ultra_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
-@bot.callback_query_handler(func=lambda call: call.data == 'ultra_30')
-def ultra_30(call): process_subscription(call, "ultra", 30, 0.7, 75, 75)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'ultra_60')
-def ultra_60(call): process_subscription(call, "ultra", 60, 1.2, 120, 130)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'ultra_90')
-def ultra_90(call): process_subscription(call, "ultra", 90, 1.7, 170, 190)
-
-# ==================== ФУНКЦИЯ ВЫБОРА ОПЛАТЫ ====================
-def process_subscription(call, sub_type, days, amount_ton, stars_amount, balance_amount):
-    pending_payments[call.from_user.id] = {
-        "days": days,
-        "ton": amount_ton,
-        "stars": stars_amount,
-        "balance": balance_amount,
-        "sub_type": sub_type
-    }
+@bot.callback_query_handler(func=lambda call: call.data == 'sub_full')
+def sub_full_menu(call):
+    text = "🔑 **FULL-SUB**\n\n30д — 1 TON / 100⭐\n60д — 1.75 TON / 170⭐\n90д — 2.5 TON / 250⭐"
     keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{amount_ton}"),
-        InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars_amount}")
-    )
-    keyboard.row(
-        InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{balance_amount}")
-    )
+    keyboard.row(InlineKeyboardButton("📆 30", callback_data="full_30"), InlineKeyboardButton("📆 60", callback_data="full_60"), InlineKeyboardButton("📆 90", callback_data="full_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.send_message(
-        call.message.chat.id,
-        f"💳 **Выберите способ оплаты**\n\n📅 Период: {days} дней\n\n💎 TON: {amount_ton} TON\n⭐ Stars: {stars_amount} ⭐\n💰 Баланс: {balance_amount} 💵\n\nКак удобнее?",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
-# ==================== ОБРАБОТЧИКИ ОПЛАТЫ ====================
+@bot.callback_query_handler(func=lambda call: call.data == 'sub_fast')
+def sub_fast_menu(call):
+    text = "🛡️ **FAST-SUB**\n\n30д — 1.5 TON / 150⭐\n60д — 2.5 TON / 250⭐\n90д — 3.5 TON / 350⭐"
+    keyboard = InlineKeyboardMarkup()
+    keyboard.row(InlineKeyboardButton("📆 30", callback_data="fast_30"), InlineKeyboardButton("📆 60", callback_data="fast_60"), InlineKeyboardButton("📆 90", callback_data="fast_90"))
+    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
+    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
+
+# Периоды
+def process_period(call, sub_type, days, ton, stars, bal):
+    pending_payments[call.from_user.id] = {"days": days, "sub_type": sub_type}
+    keyboard = InlineKeyboardMarkup()
+    keyboard.row(InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{ton}"), InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars}"))
+    keyboard.row(InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{bal}"))
+    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data=f"sub_{sub_type}"))
+    bot.edit_message_text(f"💳 **Способ оплаты**\n\n📅 {days} дней\n💎 TON: {ton}\n⭐ Stars: {stars}\n💰 Баланс: {bal} 💵",
+                          call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('def_'))
+def def_period(call):
+    days = int(call.data.split('_')[1])
+    prices = {30: (0.5,50,50), 60: (0.9,85,90), 90: (1.25,120,135)}
+    process_period(call, "def", days, *prices[days])
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('ultra_'))
+def ultra_period(call):
+    days = int(call.data.split('_')[1])
+    prices = {30: (0.7,75,75), 60: (1.2,120,130), 90: (1.7,170,190)}
+    process_period(call, "ultra", days, *prices[days])
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('full_'))
+def full_period(call):
+    days = int(call.data.split('_')[1])
+    prices = {30: (1,100,100), 60: (1.75,170,170), 90: (2.5,250,275)}
+    process_period(call, "full", days, *prices[days])
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('fast_'))
+def fast_period(call):
+    days = int(call.data.split('_')[1])
+    prices = {30: (1.5,150,150), 60: (2.5,250,250), 90: (3.5,350,350)}
+    process_period(call, "fast", days, *prices[days])
+
+# Обработчики оплаты (без изменений, но там могут быть вызовы create_user_subscription – они сами проверку не требуют)
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
@@ -911,14 +862,11 @@ def handle_balance_payment(call):
         return
     success, new_balance = deduct_balance(user_id, balance_amount)
     if not success:
-        bot.answer_callback_query(call.id, "❌ Ошибка при списании", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
         return
     link = create_user_subscription(user_id, days, sub_type, is_trial=False)
     if link:
-        bot.send_message(
-            call.message.chat.id,
-            f"✅ **Подписка создана!**\n\n💰 Оплачено: {balance_amount} 💵\n💰 Остаток: {new_balance} 💵\n📅 {days} дней\n\n🔗 {link}\n\n⚠️ Удалите старую подписку и добавьте эту новую ссылку!"
-        )
+        bot.send_message(call.message.chat.id, f"✅ **Подписка создана!**\n💰 {balance_amount} 💵\n💰 Остаток: {new_balance} 💵\n📅 {days} дней\n\n🔗 {link}")
         bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵")
         bot.answer_callback_query(call.id, "✅ Оплачено!")
     else:
@@ -932,21 +880,11 @@ def handle_ton_payment(call):
     amount_ton = float(parts[2])
     user_id = call.from_user.id
     sub_type = pending_payments.get(user_id, {}).get("sub_type", "full")
-    pending_payments[user_id] = {
-        "days": days,
-        "ton": amount_ton,
-        "sub_type": sub_type,
-        "start_time": time.time()
-    }
+    pending_payments[user_id] = {"days": days, "ton": amount_ton, "sub_type": sub_type, "start_time": time.time()}
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data=f"check_{days}_{amount_ton}_{sub_type}"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
-    bot.send_message(
-        call.message.chat.id,
-        f"💳 **Оплата TON**\n\n💰 {amount_ton} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Я перевел»\n⏰ 10 минут",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    bot.send_message(call.message.chat.id, f"💳 **Оплата TON**\n\n💰 {amount_ton} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Я перевел»\n⏰ 10 минут", reply_markup=keyboard, parse_mode='Markdown')
     bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ TON\n👤 {user_id}\n💰 {amount_ton} TON")
     bot.answer_callback_query(call.id)
 
@@ -957,102 +895,36 @@ def handle_stars_payment(call):
     stars_amount = int(parts[2])
     user_id = call.from_user.id
     sub_type = pending_payments.get(user_id, {}).get("sub_type", "full")
-    pending_payments[user_id] = {
-        "days": days,
-        "stars": stars_amount,
-        "sub_type": sub_type,
-    }
     send_stars_invoice(user_id, days, stars_amount, sub_type)
     bot.answer_callback_query(call.id, "⭐ Счёт отправлен!")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
-def handle_check(call):
+def handle_check_payment(call):
     parts = call.data.split('_')
-    days, amount_ton, sub_type = int(parts[1]), float(parts[2]), parts[3] if len(parts) > 3 else "full"
-    bot.send_message(
-        call.message.chat.id,
-        "⏳ Проверяем оплату...\n\nПожалуйста, подождите. Обычно это занимает 1-2 минуты."
-    )
+    days, amount_ton, sub_type = int(parts[1]), float(parts[2]), parts[3]
+    bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
     Thread(target=monitor_payment, args=(call.from_user.id, amount_ton, days, sub_type)).start()
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'trial')
 def trial_callback(call):
-    user_id = call.from_user.id
-    if github_get_file_content(f"trials/trial_{user_id}"):
-        bot.answer_callback_query(call.id, "❌ Вы уже использовали пробный период!", show_alert=True)
-        return
-    days_left, _, _ = get_user_subscription_info(user_id)
-    if days_left is not None and days_left != "expired":
-        bot.answer_callback_query(call.id, "❌ У вас уже есть активная подписка!", show_alert=True)
-        return
-    link = create_user_subscription(user_id, 3, sub_type="", is_trial=True)
-    if link:
-        github_upload_file(f"trial_{user_id}", "used", folder="trials")
-        bot.send_message(
-            user_id,
-            f"🎁 **Пробный период активирован!**\n\n"
-            f"📅 Действует: 3 дня\n\n"
-            f"🔗 **Ваша ссылка:**\n{link}\n\n"
-            f"📱 Добавьте ссылку в v2rayNG"
-        )
-        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД**\n👤 {user_id}")
-        bot.answer_callback_query(call.id, "✅ Пробный период активирован!")
-    else:
-        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
-
-# ==================== НАЗАД И ОТМЕНА ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'back_to_main')
-def back_to_main(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("👤 Профиль", callback_data="profile"),
-        InlineKeyboardButton("💰 Купить VPN", callback_data="buy_menu")
-    )
-    keyboard.row(
-        InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
-        InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
-    )
-    keyboard.row(
-        InlineKeyboardButton("⚠️ Канал с новостями", url="https://t.me/folwixxxvpn")
-    )
-    caption = (
-        "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
-        "✅ Быстрые серверы\n"
-        "✅ Обход ограничений\n"
-        "✅ Безлимитный трафик\n\n"
-        "**Тарифы (30 дней):**\n"
-        "🪙 DEF-SUB — 0.5 TON / 50⭐ / 50💵\n"
-        "⭐ ULTRA-SUB — 0.7 TON / 75⭐ / 75💵\n"
-        "🔑 FULL-SUB — 1 TON / 100⭐ / 100💵\n"
-        "🛡️ FAST-SUB — 1.5 TON / 150⭐ / 150💵\n\n"
-        "🎁 Пробный период 3 дня — бесплатно!\n\n"
-        "Выберите действие 👇"
-    )
-    bot.send_message(
-        call.message.chat.id,
-        caption,
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    trial_command(call.message)
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cancel')
-def handle_cancel(call):
-    if call.from_user.id in pending_payments:
-        del pending_payments[call.from_user.id]
+def cancel_payment(call):
+    pending_payments.pop(call.from_user.id, None)
     bot.send_message(call.message.chat.id, "❌ Оплата отменена")
     bot.answer_callback_query(call.id)
 
-# ==================== СБОР ДАННЫХ ====================
+# ==================== УТИЛИТЫ ====================
 def send_user_info_to_admin(message):
-    user = message.from_user
-    save_user(user.id)
+    save_user(message.from_user.id)
     user_info = (
         f"🆕 **НОВЫЙ ПОЛЬЗОВАТЕЛЬ!**\n\n"
-        f"🆔 **User ID:** `{user.id}`\n"
-        f"👤 **Имя:** {user.first_name or '❌'}\n"
-        f"📛 **Username:** @{user.username or '❌'}\n"
+        f"🆔 **User ID:** `{message.from_user.id}`\n"
+        f"👤 **Имя:** {message.from_user.first_name or '❌'}\n"
+        f"📛 **Username:** @{message.from_user.username or '❌'}\n"
         f"📅 **Время:** {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
     try:
@@ -1067,19 +939,7 @@ if __name__ == "__main__":
     web_thread.start()
     print("🌐 Веб-сервер запущен на порту 10000")
     print("🤖 Бот запущен. Репозиторий должен быть ПУБЛИЧНЫМ!")
-    print("📢 ДОСТУПНЫЕ КОМАНДЫ:")
-    print("   /start - Главное меню")
-    print("   /profile - Мой профиль")
-    print("   /buy - Купить VPN")
-    print("   /trial - Пробный период")
-    print("   /support - Поддержка")
-    print("   /refresh_config - Обновить конфиг")
-    print("   /pay - Пополнить баланс (админ)")
-    print("   /users_count - Количество пользователей (админ)")
-    print("   /update_all_configs - Обновить все конфиги (админ)")
-    print("   /renew_all_links - Массовое обновление ссылок (админ)")
-    print("   /check - Диагностика (админ)")
-
+    print("🔒 Включена проверка подписки на канал @" + REQUIRED_CHANNEL)
     while True:
         try:
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
