@@ -116,29 +116,28 @@
         @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .subtitle { color: #888; font-size: 14px; margin-top: 8px; }
 
-        /*  РОВНАЯ ТАБЛЕТКА */
+        /* ИДЕАЛЬНО РОВНАЯ ТАБЛЕТКА */
         .tabs-container {
             position: relative;
             background: rgba(20, 20, 40, 0.5);
             backdrop-filter: blur(10px);
-            border-radius: 50px;
-            padding: 4px;
+            border-radius: 60px;
+            padding: 5px;
             margin-bottom: 25px;
             border: 1px solid rgba(0, 170, 255, 0.2);
             transition: border-color 0.3s ease;
-            overflow: hidden;
         }
         .tabs {
             display: flex;
             position: relative;
-            gap: 4px;
+            gap: 6px;
         }
         .tab-btn {
             flex: 1;
-            padding: 10px 12px;
+            padding: 12px 0;
             background: transparent;
             border: none;
-            border-radius: 46px;
+            border-radius: 50px;
             font-size: 13px;
             font-weight: 600;
             color: #888;
@@ -154,14 +153,14 @@
         }
         .tab-slider {
             position: absolute;
-            top: 4px;
-            bottom: 4px;
-            left: 4px;
-            width: calc(25% - 3px);
-            border-radius: 46px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            top: 5px;
+            bottom: 5px;
+            left: 5px;
+            border-radius: 50px;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1;
             box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+            background: linear-gradient(135deg, #00aaff, #0066cc);
         }
 
         .tab-content { display: none; animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -357,23 +356,27 @@
             Telegram.WebApp.setBackgroundColor('#0a0a0a');
         }
 
-        // Ровные вкладки
+        // ИДЕАЛЬНО РОВНЫЕ ВКЛАДКИ
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
         const slider = document.getElementById('tabSlider');
         const tabsContainer = document.querySelector('.tabs-container');
 
-        function updateSliderPosition() {
+        function updateSliderSizeAndPosition() {
             if (!slider) return;
             const activeTab = document.querySelector('.tab-btn.active');
             if (!activeTab) return;
             
-            const tabsRect = tabsContainer.getBoundingClientRect();
-            const activeRect = activeTab.getBoundingClientRect();
-            const leftOffset = activeRect.left - tabsRect.left;
+            // Получаем точные размеры кнопки
+            const tabRect = activeTab.getBoundingClientRect();
+            const containerRect = tabsContainer.getBoundingClientRect();
             
+            // Рассчитываем точное смещение
+            const leftOffset = tabRect.left - containerRect.left;
+            
+            // Устанавливаем ширину и позицию
+            slider.style.width = `${tabRect.width}px`;
             slider.style.transform = `translateX(${leftOffset}px)`;
-            slider.style.width = `${activeRect.width}px`;
         }
 
         function switchTab(activeTab) {
@@ -384,17 +387,18 @@
                 content.classList.remove('active');
                 if (content.id === `tab-${tabId}`) content.classList.add('active');
             });
-            updateSliderPosition();
+            updateSliderSizeAndPosition();
         }
 
         tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn)));
         
-        window.addEventListener('load', () => {
-            updateSliderPosition();
-        });
-        window.addEventListener('resize', () => {
-            updateSliderPosition();
-        });
+        // Инициализация и адаптация под изменение размера
+        window.addEventListener('load', () => updateSliderSizeAndPosition());
+        window.addEventListener('resize', () => updateSliderSizeAndPosition());
+        
+        // Дополнительно обновляем при любых изменениях (для телефонов)
+        setTimeout(updateSliderSizeAndPosition, 100);
+        setTimeout(updateSliderSizeAndPosition, 300);
 
         // Частицы
         function createParticles() {
@@ -427,6 +431,7 @@
                 themeMenu.classList.remove('active');
                 localStorage.setItem('vpn_theme', theme);
                 showToast('Тема изменена! 🎨');
+                setTimeout(updateSliderSizeAndPosition, 50);
             });
         });
         themeBtn.addEventListener('click', (e) => { e.stopPropagation(); themeMenu.classList.toggle('active'); });
