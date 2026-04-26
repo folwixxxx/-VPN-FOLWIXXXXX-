@@ -1,7 +1,0 @@
-# profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌
-# profile-update-interval: 1440
-# status: EXPIRED
-# expired: 2023-01-01 00:00:00
-
-vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED
-trojan://expired@0.0.0.0:443#EXPIRED
