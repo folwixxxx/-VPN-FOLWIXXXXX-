@@ -10,6 +10,7 @@ from threading import Thread
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, BotCommand, BotCommandScopeDefault
 from flask import Flask, request, Response
+from telebot.types import WebAppInfo
 
 # ==================== ТОКЕНЫ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ====================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -496,6 +497,9 @@ def start_command(message):
     keyboard.row(
         InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL),
         InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn")
+    )
+    keyboard.row(
+        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url="https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/docs/instructions.html"))
     )
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
