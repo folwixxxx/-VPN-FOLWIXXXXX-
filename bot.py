@@ -15,7 +15,6 @@ from flask import Flask, request, Response
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
-RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
@@ -33,6 +32,28 @@ YOUR_ADMIN_ID = 8684879669
 YOUR_USERNAME = "ylvvvl"
 
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
+
+# ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ШАБЛОНОВ ИЗ ПРИВАТНОГО РЕПО ====================
+def get_template_content(template_file):
+    """Читает шаблон из приватного репозитория через GitHub API"""
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{template_file}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"❌ Ошибка загрузки шаблона {template_file}: {response.status_code}")
+        return None
+    
+    try:
+        content_base64 = response.json()["content"]
+        content = base64.b64decode(content_base64).decode('utf-8')
+        return content
+    except Exception as e:
+        print(f"❌ Ошибка декодирования {template_file}: {e}")
+        return None
 
 # ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ ====================
 def generate_user_token(user_id, expiry_timestamp):
@@ -88,12 +109,10 @@ def get_user_config(user_id):
     if not token:
         return {"error": "Missing token"}, 403
     
-    # Ищем подписку пользователя
     folder = get_user_subscription_folder(user_id)
     if not folder:
         return {"error": "Subscription not found"}, 404
     
-    # Получаем файл истечения
     expiry_content = github_get_file_content(f"subscriptions/{folder}/user_{user_id}.expiry")
     if not expiry_content:
         return {"error": "Subscription expired"}, 403
@@ -104,16 +123,13 @@ def get_user_config(user_id):
     if now > expiry_timestamp:
         return {"error": "Subscription expired"}, 403
     
-    # Проверяем токен
     if not verify_user_token(user_id, token, expiry_timestamp):
         return {"error": "Invalid token"}, 403
     
-    # Получаем конфиг
     content = github_get_file_content(f"subscriptions/{folder}/user_{user_id}.txt")
     if not content:
         return {"error": "Config not found"}, 404
     
-    # Отдаем конфиг
     return Response(content, mimetype='text/plain', headers={
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Content-Disposition': f'inline; filename="config_{user_id}.txt"'
@@ -213,19 +229,16 @@ def force_update_user_config(user_id, sub_type):
     if sub_type == "full":
         template_file = "template.txt"
     
-    url = f"{RAW_BASE}/{template_file}"
-    response = requests.get(url)
-    if response.status_code != 200:
+    template_content = get_template_content(template_file)
+    if not template_content:
         return False
     
-    template_content = response.text
     folder = get_subscription_folder_by_type(sub_type)
     
     template_content = template_content.replace(
         "❀VPN USER❀",
         f"❀{sub_type.upper()}-SUB {user_id}❀"
     )
-    
     template_content += f"\n# Обновлено вручную: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
     
     success = github_upload_file(f"user_{user_id}.txt", template_content, folder=f"subscriptions/{folder}")
@@ -309,13 +322,11 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
             sub_name = "FULL-SUB (🔑Обход БС и VPN💵)"
             folder = "full-sub"
     
-    url = f"{RAW_BASE}/{template_file}"
-    response = requests.get(url)
-    if response.status_code != 200:
+    template_content = get_template_content(template_file)
+    if not template_content:
         bot.send_message(user_id, f"❌ Ошибка: не найден шаблон {template_file}")
         return None
     
-    template_content = response.text
     expiry_date = datetime.now() + timedelta(days=days)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
     
@@ -345,7 +356,6 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
     if not is_trial:
         github_upload_file(f"{filename}.type", sub_type, folder=f"subscriptions/{folder}")
     
-    # Генерируем API-ссылку с токеном
     token = generate_user_token(user_id, expiry_timestamp)
     return f"{BOT_URL}/get_config/{user_id}?token={token}"
 
@@ -364,7 +374,6 @@ def get_user_subscription_info(user_id):
                 days_left = (expiry_timestamp - now) // 86400
                 expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S")
                 
-                # Генерируем актуальную ссылку с токеном
                 token = generate_user_token(user_id, expiry_timestamp)
                 subscription_link = f"{BOT_URL}/get_config/{user_id}?token={token}"
                 
@@ -585,13 +594,6 @@ def trial_command(message):
         bot.reply_to(message, "❌ У вас уже есть активная подписка!")
         return
     
-    trial_file_url = f"{RAW_BASE}/trial-sub.txt"
-    response = requests.get(trial_file_url)
-    if response.status_code != 200:
-        bot.reply_to(message, "❌ Ошибка: файл trial-sub.txt не найден!")
-        bot.send_message(YOUR_ADMIN_ID, f"⚠️ ВНИМАНИЕ! Файл trial-sub.txt не найден в репозитории!")
-        return
-    
     link = create_user_subscription(user_id, 3, sub_type="", is_trial=True)
     
     if link:
@@ -642,7 +644,6 @@ def refresh_config_command(message):
     success = force_update_user_config(user_id, sub_type)
     
     if success:
-        # Получаем новую ссылку с актуальным токеном
         _, _, new_link = get_user_subscription_info(user_id)
         bot.reply_to(
             message,
@@ -1075,13 +1076,6 @@ def trial_callback(call):
         bot.answer_callback_query(call.id, "❌ У вас уже есть активная подписка!", show_alert=True)
         return
     
-    trial_file_url = f"{RAW_BASE}/trial-sub.txt"
-    response = requests.get(trial_file_url)
-    if response.status_code != 200:
-        bot.answer_callback_query(call.id, "❌ Ошибка: файл trial-sub.txt не найден!", show_alert=True)
-        bot.send_message(YOUR_ADMIN_ID, f"⚠️ ВНИМАНИЕ! Файл trial-sub.txt не найден в репозитории!")
-        return
-    
     link = create_user_subscription(user_id, 3, sub_type="", is_trial=True)
     
     if link:
@@ -1182,6 +1176,10 @@ if __name__ == "__main__":
     print("   /trial - Пробный период")
     print("   /support - Поддержка")
     print("   /refresh_config - Обновить конфиг")
+    print("   /pay - Пополнить баланс (админ)")
+    print("   /users_count - Количество пользователей (админ)")
+    print("   /update_all_configs - Обновить все конфиги (админ)")
+    print("   /check - Диагностика (админ)")
     
     while True:
         try:
