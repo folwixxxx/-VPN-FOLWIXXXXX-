@@ -1,1 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>VPN - Инструкция по подключению</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .device-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a2a;
+        }
+        .device-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .device-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .step {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            border-left: 2px solid #00aaff;
+        }
+        .step-num {
+            color: #00aaff;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .step-text {
+            color: #ccc;
+            font-size: 14px;
+        }
+        .link-box {
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            color: #00aaff;
+        }
+        .note {
+            background: #1a2a1a;
+            border: 1px solid #2a3a2a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #8bc34a;
+        }
+        .warning {
+            background: #2a1a1a;
+            border: 1px solid #aa3333;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #ff8888;
+        }
+        .footer {
+            text-align: center;
+            color: #555;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+        button {
+            background: #00aaff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        button:active {
+            background: #0088cc;
+        }
+        a {
+            color: #00aaff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 VPN инструкция</h1>
+        <div class="subtitle">Подключение на разных устройствах</div>
 
+        <div class="warning">
+            ⚠️ <strong>Важно!</strong> Ссылка на подписку выдается в боте после оплаты. Получить её можно в разделе «Профиль» или после покупки.
+        </div>
+
+        <div class="device-card">
+            <div class="device-icon">🤖</div>
+            <div class="device-title">Android (v2rayNG)</div>
+            <div class="step">
+                <div class="step-num">Шаг 1</div>
+                <div class="step-text">Скачайте v2rayNG из Google Play или GitHub</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 2</div>
+                <div class="step-text">Откройте приложение → нажмите на плюс ➕ в правом верхнем углу</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 3</div>
+                <div class="step-text">Выберите «Импорт подписки из буфера» или «Добавить подписку»</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 4</div>
+                <div class="step-text">Вставьте ссылку, которую дал бот → нажмите «ОК»</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 5</div>
+                <div class="step-text">Нажмите на иконку ▶️ (треугольник) для подключения</div>
+            </div>
+            <div class="note" style="margin-top: 15px;">
+                📥 Скачать: <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayNG/releases');return false;">GitHub</a> | <a href="#" onclick="Telegram.WebApp.openLink('https://play.google.com/store/apps/details?id=com.v2ray.ang');return false;">Google Play</a>
+            </div>
+        </div>
+
+        <div class="device-card">
+            <div class="device-icon">🍎</div>
+            <div class="device-title">iOS (iPhone / iPad)</div>
+            <div class="step">
+                <div class="step-num">Вариант A — NekoBox (бесплатно)</div>
+                <div class="step-text">Скачайте NekoBox из App Store → Добавьте подписку → Вставьте ссылку</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Вариант B — Shadowrocket (платный)</div>
+                <div class="step-text">Скачайте Shadowrocket → Нажмите «+» → «Subscribe» → Вставьте ссылку</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Вариант C — FoXray (бесплатно)</div>
+                <div class="step-text">Скачайте FoXray → Добавьте подписку через + → укажите ссылку</div>
+            </div>
+        </div>
+
+        <div class="device-card">
+            <div class="device-icon">🪟</div>
+            <div class="device-title">Windows (v2rayN / NekoRay)</div>
+            <div class="step">
+                <div class="step-num">Шаг 1</div>
+                <div class="step-text">Скачайте v2rayN или NekoRay с GitHub</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 2</div>
+                <div class="step-text">Распакуйте архив и запустите программу</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 3</div>
+                <div class="step-text">Нажмите «Подписки» → «Добавить подписку» → Вставьте ссылку</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 4</div>
+                <div class="step-text">ПКМ на сервере → «Выбрать активный сервер» → Включите прокси в трее</div>
+            </div>
+            <div class="note" style="margin-top: 15px;">
+                📥 Скачать: <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayN/releases');return false;">v2rayN</a> | <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/MatsuriDayo/nekoray/releases');return false;">NekoRay</a>
+            </div>
+        </div>
+
+        <div class="device-card">
+            <div class="device-icon">🍏</div>
+            <div class="device-title">macOS (NekoRay)</div>
+            <div class="step">
+                <div class="step-num">Шаг 1</div>
+                <div class="step-text">Скачайте NekoRay для macOS с GitHub</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 2</div>
+                <div class="step-text">Запустите, нажмите «Подписки» → «Добавить подписку»</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 3</div>
+                <div class="step-text">Вставьте ссылку от бота, сохраните</div>
+            </div>
+            <div class="step">
+                <div class="step-num">Шаг 4</div>
+                <div class="step-text">Включите «Tun» или «Системный прокси»</div>
+            </div>
+        </div>
+
+        <div class="note">
+            💡 <strong>Советы:</strong><br>
+            • Если не работает — попробуйте удалить подписку и добавить заново<br>
+            • Обновляйте подписку после продления (нажмите на подписку → «Обновить»)<br>
+            • Для просмотра даты истечения используйте команду /profile<br>
+            • При проблемах пишите в поддержку @ylvvvl
+        </div>
+
+        <button onclick="Telegram.WebApp.close()">✖️ Закрыть</button>
+        <div class="footer">
+            FOLWIXXX VPN © 2026
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        if (Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+            Telegram.WebApp.setHeaderColor('#0a0a0a');
+            Telegram.WebApp.setBackgroundColor('#0a0a0a');
+        }
+    </script>
+</body>
+</html>
