@@ -42,7 +42,7 @@ jobs:
                   
                   rm -f "$data_file"
                   echo "# profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" >> "$data_file"
-                  echo "# profile-update-interval: 1440" >> "$data_file"
+                  echo "# profile-update-interval: 5" >> "$data_file"
                   echo "# status: EXPIRED" >> "$data_file"
                   echo "# expired: $EXPIRE_DATE" >> "$data_file"
                   echo "" >> "$data_file"
@@ -78,7 +78,7 @@ jobs:
                     echo "⚠️ Исправляю: $txt_file"
                     rm -f "$txt_file"
                     echo "# profile-title: ❌ ПОДПИСКА ИСТЕКЛА ❌" >> "$txt_file"
-                    echo "# profile-update-interval: 1440" >> "$txt_file"
+                    echo "# profile-update-interval: 5" >> "$txt_file"
                     echo "# status: EXPIRED" >> "$txt_file"
                     echo "" >> "$txt_file"
                     echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED" >> "$txt_file"
