@@ -50,6 +50,7 @@
         body[data-theme="blue"] .badge { background: linear-gradient(135deg, rgba(0, 170, 255, 0.2), rgba(0, 102, 204, 0.2)); color: #00aaff; }
         body[data-theme="blue"] .link-btn { color: #00aaff; background: rgba(0, 170, 255, 0.12); }
         body[data-theme="blue"] .particle { background: rgba(0, 170, 255, 0.3); }
+        body[data-theme="blue"] .progress-fill { background: #00aaff; }
 
         body[data-theme="green"]::before { background: linear-gradient(135deg, #0a0a0a 0%, #0a1a0a 50%, #0a0a0a 100%); }
         body[data-theme="green"]::after { background: radial-gradient(circle at 20% 50%, rgba(0, 255, 100, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(0, 255, 100, 0.05) 0%, transparent 60%); }
@@ -57,6 +58,7 @@
         body[data-theme="green"] .badge { background: linear-gradient(135deg, rgba(0, 255, 100, 0.2), rgba(0, 153, 68, 0.2)); color: #00ff66; }
         body[data-theme="green"] .link-btn { color: #00ff66; background: rgba(0, 255, 100, 0.12); }
         body[data-theme="green"] .particle { background: rgba(0, 255, 100, 0.3); }
+        body[data-theme="green"] .progress-fill { background: #00ff66; }
 
         body[data-theme="purple"]::before { background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2a 50%, #0a0a0a 100%); }
         body[data-theme="purple"]::after { background: radial-gradient(circle at 20% 50%, rgba(170, 0, 255, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(170, 0, 255, 0.05) 0%, transparent 60%); }
@@ -64,6 +66,7 @@
         body[data-theme="purple"] .badge { background: linear-gradient(135deg, rgba(170, 0, 255, 0.2), rgba(102, 0, 204, 0.2)); color: #aa00ff; }
         body[data-theme="purple"] .link-btn { color: #aa00ff; background: rgba(170, 0, 255, 0.12); }
         body[data-theme="purple"] .particle { background: rgba(170, 0, 255, 0.3); }
+        body[data-theme="purple"] .progress-fill { background: #aa00ff; }
 
         body[data-theme="orange"]::before { background: linear-gradient(135deg, #0a0a0a 0%, #2a1a0a 50%, #0a0a0a 100%); }
         body[data-theme="orange"]::after { background: radial-gradient(circle at 20% 50%, rgba(255, 100, 0, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255, 100, 0, 0.05) 0%, transparent 60%); }
@@ -71,6 +74,7 @@
         body[data-theme="orange"] .badge { background: linear-gradient(135deg, rgba(255, 102, 0, 0.2), rgba(204, 68, 0, 0.2)); color: #ff6600; }
         body[data-theme="orange"] .link-btn { color: #ff6600; background: rgba(255, 102, 0, 0.12); }
         body[data-theme="orange"] .particle { background: rgba(255, 102, 0, 0.3); }
+        body[data-theme="orange"] .progress-fill { background: #ff6600; }
 
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -116,7 +120,7 @@
         @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .subtitle { color: #888; font-size: 14px; margin-top: 8px; }
 
-        /* ИДЕАЛЬНО РОВНАЯ ТАБЛЕТКА */
+        /* Таблетка */
         .tabs-container {
             position: relative;
             background: rgba(20, 20, 40, 0.5);
@@ -190,6 +194,47 @@
         .link-btn { padding: 10px 18px; border-radius: 40px; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: none; text-decoration: none; }
         .link-btn:active { transform: scale(0.96); }
 
+        /* Карточка реальной подписки */
+        .subscription-card {
+            background: rgba(20, 20, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(0, 170, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+        .sub-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #ccc;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .warning-small {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
         .tips {
             background: linear-gradient(135deg, rgba(26, 42, 26, 0.6), rgba(15, 26, 15, 0.6));
             backdrop-filter: blur(10px); border-radius: 24px; padding: 20px; margin-top: 20px;
@@ -234,10 +279,7 @@
         .counter .number { font-size: 22px; font-weight: 700; color: #00aaff; margin-right: 5px; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .card, .tips, .warning, .tabs-container, .header, .counter, .cta-btn { animation: fadeInUp 0.5s ease forwards; }
-        .card:nth-child(1) { animation-delay: 0s; }
-        .card:nth-child(2) { animation-delay: 0.1s; }
-        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card, .tips, .warning, .tabs-container, .header, .counter, .cta-btn, .subscription-card { animation: fadeInUp 0.5s ease forwards; }
 
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
@@ -272,6 +314,19 @@
             <div class="warning-text">
                 <strong>Важно!</strong> Ссылка на подписку выдаётся в боте после оплаты. Получить её можно в разделе «Профиль».
             </div>
+        </div>
+
+        <!-- РЕАЛЬНАЯ КАРТОЧКА ПОДПИСКИ (данные из GitHub) -->
+        <div class="subscription-card" id="subscriptionCard">
+            <div class="badge" id="subBadge">🔄 Загрузка...</div>
+            <div class="sub-info">
+                <span>🗓️ Действует до: <span id="subExpiry">--</span></span>
+                <span>⏰ <span id="subDaysLeft">--</span> дней осталось</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="subProgress" style="width: 0%;"></div>
+            </div>
+            <div class="warning-small" id="subWarning"></div>
         </div>
 
         <div class="tabs-container">
@@ -331,6 +386,7 @@
             <div class="tip-item"><div class="tip-icon">🗑️</div><div>Если не работает — удалите подписку и добавьте заново</div></div>
             <div class="tip-item"><div class="tip-icon">📅</div><div>Проверить дату истечения можно командой /profile в боте</div></div>
             <div class="tip-item"><div class="tip-icon">📨</div><div>Проблемы? Пишите поддержке: @ylvvvl</div></div>
+            <div class="tip-item"><div class="tip-icon">💰</div><div>Экономьте с подпиской на 90 дней — выгода до 30%!</div></div>
         </div>
 
         <div class="cta-btn" id="buyBtn" onclick="Telegram.WebApp.openLink('https://t.me/folwixxxvpn_bot')">
@@ -339,6 +395,10 @@
 
         <div class="counter" id="counter">
             <span class="number" id="userCount">0</span> активных пользователей сейчас
+        </div>
+
+        <div class="counter" style="margin-top: 12px; background: rgba(0, 170, 255, 0.1);">
+            🌍 Серверы: 🇳🇱 NL | 🇩🇪 DE | 🇫🇮 FI | 🇸🇬 SG | 🇺🇸 US
         </div>
 
         <button class="close-btn" onclick="Telegram.WebApp.close()">✖️ Закрыть</button>
@@ -356,7 +416,7 @@
             Telegram.WebApp.setBackgroundColor('#0a0a0a');
         }
 
-        // ИДЕАЛЬНО РОВНЫЕ ВКЛАДКИ
+        // Вкладки
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
         const slider = document.getElementById('tabSlider');
@@ -366,15 +426,9 @@
             if (!slider) return;
             const activeTab = document.querySelector('.tab-btn.active');
             if (!activeTab) return;
-            
-            // Получаем точные размеры кнопки
             const tabRect = activeTab.getBoundingClientRect();
             const containerRect = tabsContainer.getBoundingClientRect();
-            
-            // Рассчитываем точное смещение
             const leftOffset = tabRect.left - containerRect.left;
-            
-            // Устанавливаем ширину и позицию
             slider.style.width = `${tabRect.width}px`;
             slider.style.transform = `translateX(${leftOffset}px)`;
         }
@@ -391,21 +445,138 @@
         }
 
         tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn)));
-        
-        // Инициализация и адаптация под изменение размера
         window.addEventListener('load', () => updateSliderSizeAndPosition());
         window.addEventListener('resize', () => updateSliderSizeAndPosition());
+
+        // ПОЛУЧЕНИЕ РЕАЛЬНОЙ ПОДПИСКИ ИЗ GITHUB
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
         
-        // Дополнительно обновляем при любых изменениях (для телефонов)
-        setTimeout(updateSliderSizeAndPosition, 100);
-        setTimeout(updateSliderSizeAndPosition, 300);
+        // Эмодзи для типов подписок
+        const subTypeEmoji = {
+            'def': '💵',
+            'ultra': '⭐',
+            'full': '🔑',
+            'fast': '🛡️',
+            'trial': '🎁'
+        };
+        
+        const subTypeName = {
+            'def': 'DEF-SUB',
+            'ultra': 'ULTRA-SUB',
+            'full': 'FULL-SUB',
+            'fast': 'FAST-SUB',
+            'trial': 'TRIAL'
+        };
+        
+        async function getUserSubscription() {
+            const badgeEl = document.getElementById('subBadge');
+            const expiryEl = document.getElementById('subExpiry');
+            const daysLeftEl = document.getElementById('subDaysLeft');
+            const progressEl = document.getElementById('subProgress');
+            const warningEl = document.getElementById('subWarning');
+            
+            if (!userId) {
+                badgeEl.textContent = '❌ Ошибка';
+                expiryEl.textContent = 'Не передан user_id';
+                daysLeftEl.textContent = '--';
+                warningEl.textContent = '⚠️ Ссылка должна содержать параметр ?user_id=...';
+                return;
+            }
+            
+            try {
+                // Пытаемся найти подписку во всех папках
+                const folders = ['def-sub', 'ultra-sub', 'full-sub', 'fast-sub', 'trial-sub'];
+                let found = false;
+                
+                for (const folder of folders) {
+                    const expiryUrl = `https://api.github.com/repos/folwixxxx/-VPN-FOLWIXXXXX-/contents/subscriptions/${folder}/user_${userId}.expiry`;
+                    const response = await fetch(expiryUrl, {
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const expiryTimestamp = parseInt(atob(data.content), 10);
+                        const now = Math.floor(Date.now() / 1000);
+                        
+                        if (now > expiryTimestamp) {
+                            continue; // подписка истекла, ищем в другой папке
+                        }
+                        
+                        const daysLeft = Math.ceil((expiryTimestamp - now) / 86400);
+                        const expiryDate = new Date(expiryTimestamp * 1000);
+                        const expiryDateStr = expiryDate.toLocaleDateString('ru-RU');
+                        
+                        // Определяем тип подписки
+                        let subType = folder.replace('-sub', '');
+                        if (subType === 'full') subType = 'full';
+                        
+                        const emoji = subTypeEmoji[subType] || '🔒';
+                        const name = subTypeName[subType] || 'VPN';
+                        
+                        badgeEl.textContent = `${emoji} ${name} • Активна`;
+                        expiryEl.textContent = expiryDateStr;
+                        daysLeftEl.textContent = daysLeft;
+                        
+                        // Прогресс (предполагаем подписку на 30 дней)
+                        const totalDays = 30;
+                        const percent = Math.max(0, Math.min(100, (daysLeft / totalDays) * 100));
+                        progressEl.style.width = `${percent}%`;
+                        
+                        if (daysLeft <= 7 && daysLeft > 0) {
+                            warningEl.textContent = '⚠️ Скоро закончится! Продлите подписку в боте.';
+                            warningEl.style.color = '#ffaa44';
+                        } else if (daysLeft <= 0) {
+                            warningEl.textContent = '❌ Подписка истекла! Перейдите в бот для продления.';
+                            warningEl.style.color = '#ff6666';
+                        } else {
+                            warningEl.textContent = '';
+                        }
+                        
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    badgeEl.textContent = '❌ Нет активной подписки';
+                    expiryEl.textContent = '--';
+                    daysLeftEl.textContent = '0';
+                    progressEl.style.width = '0%';
+                    warningEl.textContent = '⚠️ У вас нет активной подписки. Перейдите в бот, чтобы купить.';
+                    warningEl.style.color = '#ff8888';
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки подписки:', error);
+                const badgeEl = document.getElementById('subBadge');
+                badgeEl.textContent = '❌ Ошибка загрузки';
+                const warningEl = document.getElementById('subWarning');
+                warningEl.textContent = '⚠️ Не удалось загрузить данные о подписке';
+            }
+        }
+        
+        // Загружаем подписку
+        if (userId) {
+            getUserSubscription();
+            // Обновляем каждую минуту
+            setInterval(getUserSubscription, 60000);
+        } else {
+            document.getElementById('subBadge').textContent = 'ℹ️ Демо-режим';
+            document.getElementById('subExpiry').textContent = '01.05.2026';
+            document.getElementById('subDaysLeft').textContent = '6';
+            document.getElementById('subProgress').style.width = '80%';
+        }
 
         // Частицы
         function createParticles() {
             const container = document.getElementById('particles');
             if (!container) return;
             container.innerHTML = '';
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 70; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
                 const size = Math.random() * 6 + 2;
