@@ -36,7 +36,7 @@ if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY])
 # ==================== ИНИЦИАЛИЗАЦИЯ ====================
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 pending_payments = {}
-user_vless_links = {}  # временное хранилище {user_id: [links]}
+user_vless_links = {}
 
 YOUR_ADMIN_ID = 8684879669
 YOUR_USERNAME = "ylvvvl"
@@ -223,12 +223,11 @@ def get_user_subscription_type(user_id):
     return None
 
 def force_update_user_config(user_id, sub_type):
+    if sub_type == "custom":
+        return True
     template_file = f"{sub_type}-sub.txt"
     if sub_type == "full":
         template_file = "template.txt"
-    if sub_type == "custom":
-        # Для кастомных конфигов шаблон не нужен
-        return True
     url = f"{RAW_BASE}/{template_file}"
     response = requests.get(url)
     if response.status_code != 200:
@@ -285,33 +284,162 @@ def deduct_balance(user_id, amount):
         return True, new_balance
     return False, current_balance
 
+# ==================== ФУНКЦИИ ПРОВЕРКИ TON ====================
+def check_ton_transaction(amount_ton, user_id):
+    API_URL = "https://toncenter.com/api/v2/getTransactions"
+    params = {"address": TON_WALLET, "limit": 20, "api_key": TON_API_KEY}
+    try:
+        response = requests.get(API_URL, params=params, timeout=30)
+        data = response.json()
+        if not data.get("ok"):
+            return False
+        for tx in data.get("result", []):
+            in_msg = tx.get("in_msg", {})
+            if in_msg.get("destination") != TON_WALLET:
+                continue
+            amount_nano = int(in_msg.get("value", 0))
+            amount_tx = amount_nano / 1e9
+            if amount_tx >= amount_ton - 0.05:
+                return True
+    except:
+        return False
+    return False
+
+def monitor_payment(user_id, amount_ton, days, sub_type):
+    start_time = time.time()
+    while time.time() - start_time < 600:
+        if check_ton_transaction(amount_ton, user_id):
+            bot.send_message(user_id, f"✅ Оплата {amount_ton} TON получена! Создаю подписку...")
+            link = create_user_subscription(user_id, days, sub_type, is_trial=False)
+            if link:
+                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 Действует: {days} дней\n\n📱 Добавьте ссылку в v2rayNG")
+                bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 Тип: {sub_type}")
+            else:
+                bot.send_message(user_id, "❌ Ошибка при создании подписки")
+            return True
+        time.sleep(15)
+    bot.send_message(user_id, "⏰ Время ожидания оплаты истекло. Попробуйте снова /start")
+    return False
+
+def monitor_custom_payment(chat_id, user_id):
+    start_time = time.time()
+    while time.time() - start_time < 600:
+        if check_ton_transaction(CUSTOM_PRICE_TON, user_id):
+            links = user_vless_links.get(user_id, [])
+            link = create_custom_subscription(user_id, links)
+            if link:
+                bot.send_message(chat_id, f"✅ **Кастомный конфиг создан!**\n📊 {len(links)} серверов\n\n🔗 {link}")
+                bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (TON)\n👤 {user_id}")
+                user_vless_links.pop(user_id, None)
+            else:
+                bot.send_message(chat_id, "❌ Ошибка")
+            return
+        time.sleep(15)
+    bot.send_message(chat_id, "⏰ Время ожидания оплаты истекло")
+
+# ==================== ОПЛАТА STARS ====================
+def send_stars_invoice(user_id, days, stars_amount, sub_type):
+    if sub_type == "def":
+        title = f"💵 DEF-SUB {days}д"
+    elif sub_type == "ultra":
+        title = f"⭐ ULTRA-SUB {days}д"
+    elif sub_type == "full":
+        title = f"🔑 FULL-SUB {days}д"
+    else:
+        title = f"🛡️ FAST-SUB {days}д"
+    prices = [LabeledPrice(label="VPN подписка", amount=stars_amount)]
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton(f"⭐ Оплатить {stars_amount} Stars", pay=True))
+    try:
+        bot.send_invoice(
+            chat_id=user_id,
+            title=title,
+            description=f"VPN подписка на {days} дней\n\n✅ Безлимитный трафик\n✅ Обход блокировок",
+            invoice_payload=f"stars_{days}_{stars_amount}_{sub_type}",
+            provider_token="",
+            currency="XTR",
+            prices=prices,
+            start_parameter="vpn_sub",
+            need_name=False,
+            need_phone_number=False,
+            need_email=False,
+            reply_markup=keyboard
+        )
+        return True
+    except Exception as e:
+        print(f"❌ Ошибка инвойса: {e}")
+        return False
+
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def handle_pre_checkout(query):
+    try:
+        bot.answer_pre_checkout_query(query.id, ok=True)
+        print(f"✅ Pre-checkout подтверждён: {query.invoice_payload}")
+    except Exception as e:
+        print(f"❌ Pre-checkout error: {e}")
+
+@bot.pre_checkout_query_handler(func=lambda query: query.invoice_payload == "custom_config")
+def handle_custom_pre_checkout(query):
+    try:
+        bot.answer_pre_checkout_query(query.id, ok=True)
+    except Exception as e:
+        print(f"❌ Pre-checkout error: {e}")
+
+@bot.message_handler(content_types=['successful_payment'])
+def handle_successful_payment(message):
+    payment = message.successful_payment
+    user_id = message.from_user.id
+    payload = payment.invoice_payload
+    print(f"⭐ УСПЕШНАЯ ОПЛАТА! payload={payload}")
+    
+    if payload == "custom_config":
+        links = user_vless_links.get(user_id, [])
+        link = create_custom_subscription(user_id, links)
+        if link:
+            bot.send_message(user_id, f"✅ **Кастомный конфиг создан!**\n⭐ {CUSTOM_PRICE_STARS} Stars\n📊 {len(links)} серверов\n\n🔗 {link}")
+            bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (STARS)\n👤 {user_id}")
+            user_vless_links.pop(user_id, None)
+        else:
+            bot.send_message(user_id, "❌ Ошибка")
+        return
+    
+    parts = payload.split('_')
+    if len(parts) >= 4 and parts[0] == "stars":
+        days = int(parts[1])
+        stars_amount = int(parts[2])
+        sub_type = parts[3]
+        link = create_user_subscription(user_id, days, sub_type, is_trial=False)
+        if link:
+            bot.send_message(
+                user_id,
+                f"✅ **Подписка создана!**\n\n"
+                f"⭐ Оплачено: {stars_amount} Stars\n"
+                f"📅 Период: {days} дней\n\n"
+                f"🔗 {link}\n\n"
+                f"📱 Добавьте ссылку в v2rayNG"
+            )
+            bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д")
+
 # ==================== ФУНКЦИИ ПОДПИСОК ====================
-def create_custom_subscription(user_id, vless_links, is_paid=True):
-    """Создает кастомную подписку из ссылок пользователя"""
+def create_custom_subscription(user_id, vless_links):
     filename = f"user_{user_id}"
     folder = "custom-sub"
     
-    # Формируем контент конфига
-    header = f"""# profile-title: ⚙️ FOLWIXXX CUSTOM {user_id}
+    header = f"""# profile-title: ⚙️ CUSTOM CONFIG {user_id}
 # profile-update-interval: 1440
 # created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 # type: custom
 
 """
-    # Добавляем все vless ссылки
     content = header + "\n".join(vless_links)
-    
-    # Бесконечная подписка (timestamp = 2147483647 - 2038 год)
     expiry_timestamp = 2147483647
     
     success = github_upload_file(f"{filename}.txt", content, folder=f"subscriptions/{folder}")
     if not success:
         return None
-    
     success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
     if not success:
         return None
-    
     github_upload_file(f"{filename}.type", "custom", folder=f"subscriptions/{folder}")
     
     return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
@@ -341,17 +469,11 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
             sub_name = "FAST-SUB (🛡️ Максимальная скорость)"
             folder = "fast-sub"
         elif sub_type == "custom":
-            template_file = None
-            sub_name = "CUSTOM (⚙️ Кастомный конфиг)"
-            folder = "custom-sub"
+            return create_custom_subscription(user_id, user_vless_links.get(user_id, []))
         else:
             template_file = "template.txt"
             sub_name = "FULL-SUB (🔑Обход БС и VPN💵)"
             folder = "full-sub"
-    
-    if sub_type == "custom":
-        # Для кастомного используем отдельную функцию
-        return create_custom_subscription(user_id, user_vless_links.get(user_id, []))
     
     url = f"{RAW_BASE}/{template_file}"
     response = requests.get(url)
@@ -373,7 +495,6 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
 
 """
     template_content = header + template_content
-    
     template_content = template_content.replace(
         "❀VPN USER❀",
         f"❀{sub_name} {user_id} ({days} дней до {expiry_date_str})❀"
@@ -382,11 +503,9 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
     success = github_upload_file(f"{filename}.txt", template_content, folder=f"subscriptions/{folder}")
     if not success:
         return None
-    
     success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
     if not success:
         return None
-    
     if not is_trial and sub_type != "custom":
         github_upload_file(f"{filename}.type", sub_type, folder=f"subscriptions/{folder}")
     
@@ -417,21 +536,15 @@ def get_user_subscription_info(user_id):
 def custom_config_start(call):
     user_id = call.from_user.id
     user_vless_links[user_id] = []
-    
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Продолжить (после добавления ссылок)", callback_data="custom_proceed"))
+    keyboard.add(InlineKeyboardButton("✅ Продолжить", callback_data="custom_proceed"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="custom_cancel"))
-    
     bot.send_message(
         call.message.chat.id,
         "⚙️ **СОБРАТЬ КОНФИГ**\n\n"
-        "💰 **Цена: 50⭐ / 0.5 TON / 50💵**\n\n"
-        "📝 **Инструкция:**\n"
-        "1. Откройте ваше приложение (v2rayNG, NekoBox и т.д.)\n"
-        "2. Выберите сервера, которые хотите добавить\n"
-        "3. Нажмите «Поделиться» → «Копировать как текст»\n"
-        "4. **Отправьте одним сообщением ВСЕ vless:// ссылки**\n\n"
-        "📎 После отправки ссылок нажмите «✅ Продолжить»",
+        "💰 Цена: 50⭐ / 0.5 TON / 50💵\n\n"
+        "📝 Отправьте одним сообщением ВСЕ vless:// ссылки\n\n"
+        "После отправки нажмите «Продолжить»",
         reply_markup=keyboard,
         parse_mode='Markdown'
     )
@@ -441,83 +554,38 @@ def custom_config_start(call):
 def collect_vless_links(message):
     user_id = message.from_user.id
     text = message.text.strip()
-    
-    # Проверяем, что сообщение содержит vless:// ссылки
     lines = text.split('\n')
-    vless_found = []
-    
-    for line in lines:
-        line = line.strip()
-        if line.startswith('vless://'):
-            vless_found.append(line)
+    vless_found = [line.strip() for line in lines if line.strip().startswith('vless://')]
     
     if not vless_found:
-        bot.reply_to(message, "❌ Не найдено vless:// ссылок. Пожалуйста, отправьте ссылки в формате vless://...")
+        bot.reply_to(message, "❌ Не найдено vless:// ссылок")
         return
     
     user_vless_links[user_id] = vless_found
-    
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅ Продолжить к оплате", callback_data="custom_proceed"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="custom_cancel"))
-    keyboard.add(InlineKeyboardButton("📋 Показать добавленные", callback_data="custom_show"))
-    
-    bot.send_message(
-        user_id,
-        f"✅ **Добавлено {len(vless_found)} ссылок!**\n\n"
-        f"Нажмите «Продолжить к оплате» для создания конфига.",
-        reply_markup=keyboard
-    )
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_show')
-def custom_show(call):
-    user_id = call.from_user.id
-    links = user_vless_links.get(user_id, [])
-    
-    if not links:
-        bot.answer_callback_query(call.id, "Нет добавленных ссылок", show_alert=True)
-        return
-    
-    text = "📋 **Добавленные ссылки:**\n\n"
-    for i, link in enumerate(links, 1):
-        text += f"{i}. `{link[:80]}...`\n"
-    
-    bot.send_message(call.message.chat.id, text, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
+    bot.send_message(user_id, f"✅ Добавлено {len(vless_found)} ссылок!\nНажмите «Продолжить»", reply_markup=keyboard)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'custom_proceed')
 def custom_proceed(call):
     user_id = call.from_user.id
     links = user_vless_links.get(user_id, [])
-    
     if not links:
-        bot.answer_callback_query(call.id, "❌ Сначала добавьте vless:// ссылки", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Сначала добавьте ссылки", show_alert=True)
         return
     
-    pending_payments[user_id] = {
-        "type": "custom",
-        "links": links
-    }
-    
+    pending_payments[user_id] = {"type": "custom", "links": links}
     keyboard = InlineKeyboardMarkup()
     keyboard.row(
-        InlineKeyboardButton("💎 TON", callback_data=f"custom_ton"),
-        InlineKeyboardButton("⭐ Stars", callback_data=f"custom_stars")
-    )
-    keyboard.row(
-        InlineKeyboardButton("💰 Баланс", callback_data=f"custom_balance")
+        InlineKeyboardButton("💎 TON", callback_data="custom_ton"),
+        InlineKeyboardButton("⭐ Stars", callback_data="custom_stars"),
+        InlineKeyboardButton("💰 Баланс", callback_data="custom_balance")
     )
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    
     bot.send_message(
         call.message.chat.id,
-        f"⚙️ **Кастомный конфиг**\n\n"
-        f"📊 Добавлено серверов: {len(links)}\n"
-        f"📅 Срок: **Бессрочно**\n\n"
-        f"💳 **Выберите способ оплаты:**\n"
-        f"💎 TON: {CUSTOM_PRICE_TON} TON\n"
-        f"⭐ Stars: {CUSTOM_PRICE_STARS} ⭐\n"
-        f"💰 Баланс: {CUSTOM_PRICE_BALANCE} 💵",
+        f"⚙️ **Кастомный конфиг**\n\n📊 {len(links)} серверов\n📅 Бессрочно\n\n💳 Способ оплаты:",
         reply_markup=keyboard,
         parse_mode='Markdown'
     )
@@ -528,7 +596,7 @@ def custom_cancel(call):
     user_id = call.from_user.id
     user_vless_links.pop(user_id, None)
     pending_payments.pop(user_id, None)
-    bot.send_message(call.message.chat.id, "❌ Создание кастомного конфига отменено")
+    bot.send_message(call.message.chat.id, "❌ Отменено")
     bot.answer_callback_query(call.id)
 
 # ==================== ОПЛАТА КАСТОМНОГО КОНФИГА ====================
@@ -536,17 +604,12 @@ def custom_cancel(call):
 def custom_ton_pay(call):
     user_id = call.from_user.id
     pending_payments[user_id] = {"type": "custom", "method": "ton"}
-    
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data="custom_check"))
+    keyboard.add(InlineKeyboardButton("✅ Я перевел", callback_data="custom_check"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="custom_cancel"))
-    
     bot.send_message(
         call.message.chat.id,
-        f"💳 **Оплата кастомного конфига**\n\n"
-        f"💰 Сумма: {CUSTOM_PRICE_TON} TON\n\n"
-        f"**Кошелёк:**\n`{TON_WALLET}`\n\n"
-        f"Переведите и нажмите «✅ Я перевел»\n⏰ 10 минут",
+        f"💳 Оплата: {CUSTOM_PRICE_TON} TON\n\nКошелёк: `{TON_WALLET}`\n\nПереведите и нажмите «✅ Я перевел»",
         reply_markup=keyboard,
         parse_mode='Markdown'
     )
@@ -556,25 +619,16 @@ def custom_ton_pay(call):
 def custom_stars_pay(call):
     user_id = call.from_user.id
     pending_payments[user_id] = {"type": "custom", "method": "stars"}
-    
-    prices = [LabeledPrice(label="Кастомный конфиг", amount=CUSTOM_PRICE_STARS)]
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(f"⭐ Оплатить {CUSTOM_PRICE_STARS} Stars", pay=True))
-    
     try:
         bot.send_invoice(
-            chat_id=user_id,
-            title="⚙️ Кастомный конфиг",
-            description="Бессрочная подписка с вашими серверами",
+            chat_id=user_id, title="⚙️ Кастомный конфиг",
+            description="Бессрочная подписка",
             invoice_payload="custom_config",
-            provider_token="",
-            currency="XTR",
-            prices=prices,
+            provider_token="", currency="XTR",
+            prices=[LabeledPrice(label="Кастомный конфиг", amount=CUSTOM_PRICE_STARS)],
             start_parameter="custom_sub",
-            need_name=False,
-            need_phone_number=False,
-            need_email=False,
-            reply_markup=keyboard
+            need_name=False, need_phone_number=False, need_email=False,
+            reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f"⭐ Оплатить {CUSTOM_PRICE_STARS} Stars", pay=True))
         )
     except Exception as e:
         bot.send_message(user_id, f"❌ Ошибка: {e}")
@@ -584,30 +638,21 @@ def custom_stars_pay(call):
 def custom_balance_pay(call):
     user_id = call.from_user.id
     balance = get_balance(user_id)
-    
     if balance < CUSTOM_PRICE_BALANCE:
         bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
         return
-    
     success, new_balance = deduct_balance(user_id, CUSTOM_PRICE_BALANCE)
     if not success:
-        bot.answer_callback_query(call.id, "❌ Ошибка при списании", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
         return
-    
     links = user_vless_links.get(user_id, [])
     link = create_custom_subscription(user_id, links)
-    
     if link:
         bot.send_message(
             call.message.chat.id,
-            f"✅ **Кастомный конфиг создан!**\n\n"
-            f"💰 Оплачено: {CUSTOM_PRICE_BALANCE} 💵\n"
-            f"💰 Остаток: {new_balance} 💵\n"
-            f"📅 Срок: Бессрочно\n"
-            f"📊 Серверов: {len(links)}\n\n"
-            f"🔗 {link}"
+            f"✅ **Кастомный конфиг создан!**\n💰 {CUSTOM_PRICE_BALANCE} 💵\n💰 Остаток: {new_balance} 💵\n📊 {len(links)} серверов\n\n🔗 {link}"
         )
-        bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ\n👤 {user_id}\n💰 {CUSTOM_PRICE_BALANCE} 💵\n📊 {len(links)} серверов")
+        bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ\n👤 {user_id}\n💰 {CUSTOM_PRICE_BALANCE} 💵")
         user_vless_links.pop(user_id, None)
         bot.answer_callback_query(call.id, "✅ Оплачено!")
     else:
@@ -620,50 +665,6 @@ def custom_check_payment(call):
     bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
     Thread(target=monitor_custom_payment, args=(call.message.chat.id, user_id)).start()
     bot.answer_callback_query(call.id)
-
-def monitor_custom_payment(chat_id, user_id):
-    start_time = time.time()
-    while time.time() - start_time < 600:
-        if check_ton_transaction(CUSTOM_PRICE_TON, user_id):
-            links = user_vless_links.get(user_id, [])
-            link = create_custom_subscription(user_id, links)
-            if link:
-                bot.send_message(chat_id, f"✅ **Кастомный конфиг создан!**\n\n📅 Срок: Бессрочно\n📊 Серверов: {len(links)}\n\n🔗 {link}")
-                bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (TON)\n👤 {user_id}\n💰 {CUSTOM_PRICE_TON} TON\n📊 {len(links)} серверов")
-                user_vless_links.pop(user_id, None)
-            else:
-                bot.send_message(chat_id, "❌ Ошибка при создании конфига")
-            return True
-        time.sleep(15)
-    bot.send_message(chat_id, "⏰ Время ожидания оплаты истекло")
-    return False
-
-@bot.pre_checkout_query_handler(func=lambda query: query.invoice_payload == "custom_config")
-def handle_custom_pre_checkout(query):
-    try:
-        bot.answer_pre_checkout_query(query.id, ok=True)
-    except Exception as e:
-        print(f"❌ Pre-checkout error: {e}")
-
-@bot.message_handler(content_types=['successful_payment'])
-def handle_custom_successful_payment(message):
-    if message.successful_payment.invoice_payload == "custom_config":
-        user_id = message.from_user.id
-        links = user_vless_links.get(user_id, [])
-        link = create_custom_subscription(user_id, links)
-        if link:
-            bot.send_message(
-                user_id,
-                f"✅ **Кастомный конфиг создан!**\n\n"
-                f"⭐ Оплачено: {CUSTOM_PRICE_STARS} Stars\n"
-                f"📅 Срок: Бессрочно\n"
-                f"📊 Серверов: {len(links)}\n\n"
-                f"🔗 {link}"
-            )
-            bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (STARS)\n👤 {user_id}\n⭐ {CUSTOM_PRICE_STARS} Stars\n📊 {len(links)} серверов")
-            user_vless_links.pop(user_id, None)
-        else:
-            bot.send_message(user_id, "❌ Ошибка при создании конфига")
 
 # ==================== КОМАНДЫ ПОЛЬЗОВАТЕЛЯ ====================
 @bot.message_handler(commands=['start'])
@@ -687,6 +688,7 @@ def start_command(message):
         InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")),
         InlineKeyboardButton("⚙️ Собрать конфиг", callback_data="custom_config")
     )
+    
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
         "✅ Быстрые серверы\n"
@@ -716,6 +718,7 @@ def profile_command(message):
     if days_left and days_left != "expired" and days_left is not None:
         keyboard.add(InlineKeyboardButton("🔄 Обновить конфиг", callback_data="refresh_config_profile"))
     keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
     text = f"👤 **ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ**\n\n"
     text += f"🆔 ID: `{user_id}`\n"
     text += f"💰 Баланс: {balance} 💵\n"
@@ -745,9 +748,9 @@ def buy_command(message):
         InlineKeyboardButton("🛡️ FAST-SUB", callback_data="sub_fast")
     )
     keyboard.row(
-        InlineKeyboardButton("⚙️ CUSTOM (свой конфиг)", callback_data="custom_config")
+        InlineKeyboardButton("⚙️ CUSTOM (свой конфиг)", callback_data="custom_config"),
+        InlineKeyboardButton("◀️ Назад", callback_data="back_to_main")
     )
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
     bot.send_message(
         message.chat.id,
         "💎 **Выберите тип подписки:**\n\n"
@@ -1048,7 +1051,7 @@ def fast_period(call):
     prices = {30: (1.5,150,150), 60: (2.5,250,250), 90: (3.5,350,350)}
     process_period(call, "fast", days, *prices[days])
 
-# ==================== ОБРАБОТЧИКИ ОПЛАТЫ (обычные тарифы) ====================
+# ==================== ОБРАБОТЧИКИ ОПЛАТЫ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_') and not call.data.startswith('balance_custom'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
@@ -1067,7 +1070,7 @@ def handle_balance_payment(call):
     link = create_user_subscription(user_id, days, sub_type, is_trial=False)
     if link:
         bot.send_message(call.message.chat.id, f"✅ **Подписка создана!**\n💰 {balance_amount} 💵\n💰 Остаток: {new_balance} 💵\n📅 {days} дней\n\n🔗 {link}")
-        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📦 {sub_type}")
+        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵")
         bot.answer_callback_query(call.id, "✅ Оплачено!")
     else:
         update_balance(user_id, balance_amount)
