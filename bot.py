@@ -42,6 +42,7 @@ YOUR_ADMIN_ID = 8684879669
 YOUR_USERNAME = "ylvvvl"
 
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
+LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/locations.jpg"
 
 # ==================== ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ НА КАНАЛ ====================
 def is_subscribed(user_id):
@@ -541,7 +542,6 @@ def custom_config_start(call):
     user_id = call.from_user.id
     user_vless_links[user_id] = []
     
-    # Подробное описание кастомного конфига
     info_text = (
         "⚙️ **КАСТОМНЫЙ КОНФИГУРАТОР**\n\n"
         "📝 **Что это такое?**\n"
@@ -558,12 +558,10 @@ def custom_config_start(call):
         "```\n"
         "vless://abc123@example.com:443?encryption=none#Server1\n"
         "vless://def456@example2.com:443?encryption=none#Server2\n"
-        "vless://ghi789@example3.com:443?encryption=none#Server3\n"
         "```\n\n"
         "⚠️ **ВАЖНО:**\n"
         "• Принимаются ТОЛЬКО vless:// ссылки\n"
         "• Поддерживается БЕЗЛИМИТНОЕ количество серверов\n"
-        "• Конфиг будет обновляться мгновенно\n"
         "• После оплаты вы получите одну ссылку со ВСЕМИ серверами\n\n"
         "✅ **Готовы? Отправьте ваши vless:// ссылки!**"
     )
@@ -593,7 +591,6 @@ def collect_vless_links(message):
     
     user_vless_links[user_id] = vless_found
     
-    # Показываем список добавленных серверов
     servers_list = "\n".join([f"{i+1}. `{link[:50]}...`" for i, link in enumerate(vless_found[:5])])
     if len(vless_found) > 5:
         servers_list += f"\n... и ещё {len(vless_found) - 5} серверов"
@@ -751,8 +748,7 @@ def custom_balance_pay(call):
             f"📊 **Серверов:** {len(links)}\n"
             f"⏰ **Срок:** Бессрочно\n\n"
             f"🔗 **Ваша ссылка для v2rayNG:**\n`{link}`\n\n"
-            f"📱 Просто добавьте эту ссылку в приложение v2rayNG и все сервера появятся автоматически!\n\n"
-            f"🔄 Ссылка обновляется мгновенно при изменении серверов",
+            f"📱 Просто добавьте эту ссылку в приложение v2rayNG и все сервера появятся автоматически!",
             parse_mode='Markdown'
         )
         bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (БАЛАНС)\n👤 {user_id}\n💰 {CUSTOM_PRICE_BALANCE} 💵\n📊 {len(links)} серверов")
@@ -783,27 +779,89 @@ def custom_cancel_payment(call):
     bot.send_message(call.message.chat.id, "❌ **Оплата отменена!**\n\nВаши ссылки удалены из памяти.\n\nЧтобы начать заново - используйте /start", parse_mode='Markdown')
     bot.answer_callback_query(call.id, "✅ Отменено")
 
+# ==================== ЛОКАЦИИ ====================
+@bot.callback_query_handler(func=lambda call: call.data == 'locations')
+def locations_info(call):
+    caption = (
+        "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
+        "Мы подготовили для вас статью, которая подробно разбирает,\n"
+        "как выбрать локацию в вашей подписке под разные задачи.\n\n"
+        "📖 В статье вы узнаете:\n"
+        "• Какие локации лучше для ютуба\n"
+        "• Где самый быстрый интернет\n"
+        "• Какую страну выбрать для игр\n"
+        "• Оптимальные настройки для разных задач\n\n"
+        "👇 **Нажмите на кнопку ниже, чтобы прочитать статью**"
+    )
+    
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("📖 Читать статью о локациях", url="https://teletype.in/@ylvv/location"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
+    try:
+        with open("locations.jpg", "rb") as photo:
+            bot.send_photo(call.message.chat.id, photo, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
+    except:
+        bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
+    
+    bot.answer_callback_query(call.id)
+
+# ==================== ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ ====================
+@bot.callback_query_handler(func=lambda call: call.data == 'privacy_policy')
+def privacy_policy(call):
+    text = (
+        "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
+        "Мы серьезно относимся к защите ваших персональных данных.\n\n"
+        "В нашей политике конфиденциальности вы найдете информацию о:\n"
+        "• Какие данные мы собираем\n"
+        "• Как мы используем ваши данные\n"
+        "• Как мы защищаем вашу информацию\n"
+        "• Ваши права как пользователя\n\n"
+        "👇 **Нажмите на кнопку ниже, чтобы ознакомиться с полной версией**"
+    )
+    
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("📄 Читать политику конфиденциальности", url="https://teletype.in/@ylvv/politica"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
+    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
+
 # ==================== КОМАНДЫ ПОЛЬЗОВАТЕЛЯ ====================
 @bot.message_handler(commands=['start'])
 @require_subscription
 def start_command(message):
     send_user_info_to_admin(message)
-    keyboard = InlineKeyboardMarkup()
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    
+    # Ряд 1: Профиль и Купить VPN
     keyboard.row(
         InlineKeyboardButton("👤 Профиль", callback_data="profile"),
         InlineKeyboardButton("💰 Купить VPN", callback_data="buy_menu")
     )
+    
+    # Ряд 2: Пробный период и Собрать конфиг
     keyboard.row(
         InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
-        InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
+        InlineKeyboardButton("⚙️ Собрать конфиг", callback_data="custom_config")
     )
+    
+    # Ряд 3: Соглашение и Политика конфиденциальности
+    keyboard.row(
+        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn"),
+        InlineKeyboardButton("📚 Политика конфиденциальности", callback_data="privacy_policy")
+    )
+    
+    # Ряд 4: Канал с новостями и Инструкция
     keyboard.row(
         InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL),
-        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn")
+        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
     )
+    
+    # Ряд 5: Поддержка и Локации
     keyboard.row(
-        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")),
-        InlineKeyboardButton("⚙️ Собрать конфиг", callback_data="custom_config")
+        InlineKeyboardButton("🛠️ Поддержка", callback_data="support"),
+        InlineKeyboardButton("📍 Локации", callback_data="locations")
     )
     
     caption = (
@@ -891,6 +949,7 @@ def trial_command(message):
     if days_left is not None and days_left != "expired":
         bot.reply_to(message, "❌ У вас уже есть активная подписка!")
         return
+    # ИСПРАВЛЕНО: теперь 3 дня вместо 7
     link = create_user_subscription(user_id, 3, sub_type="", is_trial=True)
     if link:
         github_upload_file(f"trial_{user_id}", "used", folder="trials")
@@ -1271,6 +1330,9 @@ if __name__ == "__main__":
     print("🔒 Включена проверка подписки на канал @" + REQUIRED_CHANNEL)
     print("⚙️ Добавлена функция КАСТОМНОГО КОНФИГУРАТОРА с подробным описанием!")
     print("❌ Добавлены кнопки ОТМЕНЫ для всех этапов оплаты!")
+    print("📍 Добавлена кнопка ЛОКАЦИИ с фото и статьей!")
+    print("📚 Добавлена кнопка ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ!")
+    print("🎁 ИСПРАВЛЕНО: пробный период теперь 3 дня (было 7)!")
     while True:
         try:
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
