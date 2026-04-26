@@ -494,8 +494,8 @@ def start_command(message):
         InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     )
     keyboard.row(
-        InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL)
-        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@wenwolfypack/VMiJ5OMQj8c")
+        InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL),
+        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn")
     )
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
@@ -792,7 +792,6 @@ def sub_def_menu(call):
 def sub_ultra_menu(call):
     text = "⭐ **ULTRA-SUB** — Лучшие серверы\n\n💰 **Цены:**\n• 30 дней — 0.7 TON / 75⭐ / 75💵\n• 60 дней — 1.2 TON / 120⭐ / 130💵\n• 90 дней — 1.7 TON / 170⭐ / 190💵\n\nВыберите период:"
     keyboard = InlineKeyboardMarkup()
-    keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="ultra_30"), InlineKeyboardButton("📆 60", callback_data="ultra_60"), InlineKeyboardButton("📆 90", callback_data="ultra_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
@@ -801,7 +800,6 @@ def sub_ultra_menu(call):
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_full')
 def sub_full_menu(call):
     text = "🔑 **FULL-SUB** — Все серверы\n\n💰 **Цены:**\n• 30 дней — 1 TON / 100⭐ / 100💵\n• 60 дней — 1.75 TON / 170⭐ / 170💵\n• 90 дней — 2.5 TON / 250⭐ / 275💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="full_30"), InlineKeyboardButton("📆 60", callback_data="full_60"), InlineKeyboardButton("📆 90", callback_data="full_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
