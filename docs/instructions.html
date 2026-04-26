@@ -27,7 +27,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            background: linear-gradient(135deg, #0a0a0a 0%, #0f0f1a 50%, #0a0a0a 100%);
             z-index: -2;
         }
 
@@ -49,7 +49,7 @@
             50% { opacity: 1; }
         }
 
-        /* Анимированные точки на фоне */
+        /* Частицы */
         .particles {
             position: fixed;
             top: 0;
@@ -132,22 +132,21 @@
             margin-top: 8px;
         }
 
-        /* Вкладки */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            background: rgba(20, 20, 40, 0.6);
+        /* Вкладки с ползунком */
+        .tabs-container {
+            position: relative;
+            background: rgba(20, 20, 40, 0.5);
             backdrop-filter: blur(10px);
-            padding: 6px;
             border-radius: 60px;
-            overflow-x: auto;
-            scrollbar-width: none;
+            padding: 6px;
+            margin-bottom: 25px;
             border: 1px solid rgba(0, 170, 255, 0.2);
         }
 
-        .tabs::-webkit-scrollbar {
-            display: none;
+        .tabs {
+            display: flex;
+            position: relative;
+            z-index: 2;
         }
 
         .tab-btn {
@@ -160,34 +159,53 @@
             font-weight: 600;
             color: #888;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: color 0.3s ease;
             white-space: nowrap;
+            position: relative;
+            z-index: 3;
         }
 
         .tab-btn.active {
-            background: linear-gradient(135deg, #00aaff, #0066cc);
             color: #fff;
+        }
+
+        /* Анимированный ползунок */
+        .tab-slider {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            height: calc(100% - 12px);
+            background: linear-gradient(135deg, #00aaff, #0066cc);
+            border-radius: 40px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
             box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
         }
 
         /* Контент вкладок */
         .tab-content {
             display: none;
-            animation: fadeIn 0.4s ease;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         /* Карточки инструкций */
         .card {
-            background: rgba(20, 20, 40, 0.7);
+            background: rgba(20, 20, 40, 0.6);
             backdrop-filter: blur(10px);
             border-radius: 24px;
             padding: 20px;
@@ -257,7 +275,7 @@
         }
 
         .link-group {
-            background: rgba(10, 10, 20, 0.6);
+            background: rgba(10, 10, 20, 0.5);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 16px;
@@ -283,7 +301,6 @@
             border-radius: 40px;
             font-size: 13px;
             font-weight: 500;
-            text-decoration: none;
             color: #00aaff;
             transition: all 0.2s;
             display: inline-flex;
@@ -291,6 +308,7 @@
             gap: 8px;
             cursor: pointer;
             border: none;
+            text-decoration: none;
         }
 
         .link-btn:active {
@@ -298,25 +316,9 @@
             transform: scale(0.96);
         }
 
-        /* QR-код */
-        .qr-container {
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-
-        #qrcode {
-            background: white;
-            padding: 12px;
-            border-radius: 20px;
-            margin-top: 12px;
-            display: inline-block;
-        }
-
         /* Блок с советами */
         .tips {
-            background: linear-gradient(135deg, rgba(26, 42, 26, 0.7), rgba(15, 26, 15, 0.7));
+            background: linear-gradient(135deg, rgba(26, 42, 26, 0.6), rgba(15, 26, 15, 0.6));
             backdrop-filter: blur(10px);
             border-radius: 24px;
             padding: 20px;
@@ -401,16 +403,9 @@
             color: #ff8888;
             flex: 1;
         }
-
-        .qr-note {
-            font-size: 11px;
-            color: #666;
-            margin-top: 8px;
-        }
     </style>
 </head>
 <body>
-    <!-- Анимированные частицы -->
     <div class="particles" id="particles"></div>
 
     <div class="container">
@@ -427,12 +422,15 @@
             </div>
         </div>
 
-        <!-- Вкладки -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="android">🤖 Android</button>
-            <button class="tab-btn" data-tab="ios">🍎 iOS</button>
-            <button class="tab-btn" data-tab="windows">🪟 Windows</button>
-            <button class="tab-btn" data-tab="macos">🍏 macOS</button>
+        <!-- Вкладки с ползунком -->
+        <div class="tabs-container">
+            <div class="tabs" id="tabs">
+                <button class="tab-btn active" data-tab="android">🤖 Android</button>
+                <button class="tab-btn" data-tab="ios">🍎 iOS</button>
+                <button class="tab-btn" data-tab="windows">🪟 Windows</button>
+                <button class="tab-btn" data-tab="macos">🍏 macOS</button>
+            </div>
+            <div class="tab-slider" id="tabSlider"></div>
         </div>
 
         <!-- Android -->
@@ -626,24 +624,61 @@
             Telegram.WebApp.setBackgroundColor('#0a0a0a');
         }
 
-        // Переключение вкладок
+        // Анимированное переключение вкладок с ползунком
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
+        const slider = document.getElementById('tabSlider');
 
+        function updateSlider(activeTab) {
+            if (!slider) return;
+            const tabRect = activeTab.getBoundingClientRect();
+            const tabsContainer = document.querySelector('.tabs-container');
+            const containerRect = tabsContainer.getBoundingClientRect();
+            
+            slider.style.transform = `translateX(${tabRect.left - containerRect.left}px)`;
+            slider.style.width = `${tabRect.width}px`;
+        }
+
+        function switchTab(activeTab) {
+            const tabId = activeTab.getAttribute('data-tab');
+            
+            // Обновляем активный класс на кнопках
+            tabs.forEach(btn => btn.classList.remove('active'));
+            activeTab.classList.add('active');
+            
+            // Обновляем видимость контента
+            contents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `tab-${tabId}`) {
+                    content.classList.add('active');
+                }
+            });
+            
+            // Обновляем позицию ползунка
+            updateSlider(activeTab);
+        }
+
+        // Назначаем обработчики на вкладки
         tabs.forEach(btn => {
             btn.addEventListener('click', () => {
-                const tabId = btn.getAttribute('data-tab');
-                
-                tabs.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                contents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === `tab-${tabId}`) {
-                        content.classList.add('active');
-                    }
-                });
+                switchTab(btn);
             });
+        });
+
+        // Инициализация ползунка при загрузке
+        window.addEventListener('load', () => {
+            const activeTab = document.querySelector('.tab-btn.active');
+            if (activeTab && slider) {
+                updateSlider(activeTab);
+            }
+        });
+
+        // Обновляем ползунок при изменении размера окна
+        window.addEventListener('resize', () => {
+            const activeTab = document.querySelector('.tab-btn.active');
+            if (activeTab && slider) {
+                updateSlider(activeTab);
+            }
         });
 
         // Создание анимированных частиц
