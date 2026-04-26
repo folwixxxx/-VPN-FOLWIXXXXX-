@@ -13,15 +13,12 @@ from flask import Flask, request, Response
 
 # ==================== ТОКЕНЫ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ====================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")        # нужен для записи, чтение с raw – без токена
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
+RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
-SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
-
-# Домен и путь для Cloudflare Worker
-CLOUDFLARE_DOMAIN = "vpn-gate.arsa52237.workers.dev"           # ваш домен
-CLOUDFLARE_WORKER_PATH = "/get"       # путь, который обрабатывает Worker
+SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")   # для токенов (оставляем)
 
 # Проверка
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
@@ -36,43 +33,16 @@ YOUR_USERNAME = "ylvvvl"
 
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
 
-# ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ШАБЛОНОВ ИЗ ПРИВАТНОГО РЕПО ====================
-def get_template_content(template_file):
-    """Читает шаблон из приватного репозитория через GitHub API"""
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{template_file}"
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print(f"❌ Ошибка загрузки шаблона {template_file}: {response.status_code}")
-        return None
-    try:
-        content_base64 = response.json()["content"]
-        content = base64.b64decode(content_base64).decode('utf-8')
-        return content
-    except Exception as e:
-        print(f"❌ Ошибка декодирования {template_file}: {e}")
-        return None
-
-# ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ И МЕСЯЧНОЙ МЕТКИ ====================
+# ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ (оставляем для обратной совместимости) ====================
 def generate_user_token(user_id, expiry_timestamp):
-    """Генерирует уникальный токен для пользователя (привязан к дате истечения)"""
     message = f"{user_id}_{expiry_timestamp}_{SECRET_KEY}"
     return hashlib.md5(message.encode()).hexdigest()[:32]
 
 def verify_user_token(user_id, token, expiry_timestamp):
-    """Проверяет валидность токена"""
     expected = generate_user_token(user_id, expiry_timestamp)
     return hmac.compare_digest(expected, token)
 
-def get_current_month_tag():
-    """Возвращает текущую метку месяца в формате YYYY-MM"""
-    return datetime.now().strftime("%Y-%m")
-
 def get_user_subscription_folder(user_id):
-    """Находит папку с подпиской пользователя"""
     for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub"]:
         if github_get_file_content(f"subscriptions/{folder}/user_{user_id}.expiry"):
             return folder
@@ -94,7 +64,7 @@ def setup_main_menu_button():
     except Exception as e:
         print(f"⚠️ Ошибка установки кнопки меню: {e}")
 
-# ==================== ВЕБ-СЕРВЕР (оставлен для совместимости, но прямые ссылки не используются) ====================
+# ==================== ВЕБ-СЕРВЕР ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -105,7 +75,7 @@ def home():
 def health():
     return "OK", 200
 
-# Этот эндпоинт больше не используется, но оставлен для обратной совместимости
+# Эндпоинт get_config больше не используется, но оставлен для совместимости (на всякий случай)
 @app.route('/get_config/<int:user_id>')
 def get_user_config(user_id):
     token = request.args.get('token')
@@ -216,9 +186,11 @@ def force_update_user_config(user_id, sub_type):
     template_file = f"{sub_type}-sub.txt"
     if sub_type == "full":
         template_file = "template.txt"
-    template_content = get_template_content(template_file)
-    if not template_content:
+    url = f"{RAW_BASE}/{template_file}"
+    response = requests.get(url)
+    if response.status_code != 200:
         return False
+    template_content = response.text
     folder = get_subscription_folder_by_type(sub_type)
     template_content = template_content.replace(
         "❀VPN USER❀",
@@ -300,11 +272,13 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
             sub_name = "FULL-SUB (🔑Обход БС и VPN💵)"
             folder = "full-sub"
     
-    template_content = get_template_content(template_file)
-    if not template_content:
+    url = f"{RAW_BASE}/{template_file}"
+    response = requests.get(url)
+    if response.status_code != 200:
         bot.send_message(user_id, f"❌ Ошибка: не найден шаблон {template_file}")
         return None
     
+    template_content = response.text
     expiry_date = datetime.now() + timedelta(days=days)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
     
@@ -334,11 +308,8 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
     if not is_trial:
         github_upload_file(f"{filename}.type", sub_type, folder=f"subscriptions/{folder}")
     
-    # Генерация защищённой ссылки через Cloudflare Worker
-    token = generate_user_token(user_id, expiry_timestamp)
-    month_tag = get_current_month_tag()
-    # Ссылка вида: https://ob-hod.ru/vpn/get?user_id=123&token=abc&v=2026-05
-    return f"https://{CLOUDFLARE_DOMAIN}{CLOUDFLARE_WORKER_PATH}?user_id={user_id}&token={token}&v={month_tag}"
+    # Прямая ссылка на raw с кешебойным параметром ?t=
+    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
     for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub"]:
@@ -351,9 +322,7 @@ def get_user_subscription_info(user_id):
                     continue
                 days_left = (expiry_timestamp - now) // 86400
                 expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S")
-                token = generate_user_token(user_id, expiry_timestamp)
-                month_tag = get_current_month_tag()
-                subscription_link = f"https://{CLOUDFLARE_DOMAIN}{CLOUDFLARE_WORKER_PATH}?user_id={user_id}&token={token}&v={month_tag}"
+                subscription_link = f"{RAW_BASE}/subscriptions/{folder}/user_{user_id}.txt?t={int(time.time())}"
                 return days_left, expiry_date, subscription_link
             except Exception as e:
                 print(f"Ошибка: {e}")
@@ -388,7 +357,7 @@ def monitor_payment(user_id, amount_ton, days, sub_type):
             bot.send_message(user_id, f"✅ Оплата {amount_ton} TON получена! Создаю подписку...")
             link = create_user_subscription(user_id, days, sub_type, is_trial=False)
             if link:
-                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 **Ваша ссылка:**\n{link}\n\n📅 Действует: {days} дней\n\n⚠️ **ВАЖНО:** Скопируйте эту ссылку и добавьте в v2rayNG\n\n📱 Добавьте ссылку в v2rayNG")
+                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 **Ваша ссылка:**\n{link}\n\n📅 Действует: {days} дней\n\n📱 Добавьте ссылку в v2rayNG")
                 bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 Тип: {sub_type}")
             else:
                 bot.send_message(user_id, "❌ Ошибка при создании подписки")
@@ -688,7 +657,7 @@ def renew_all_links(message):
             sub_type = get_user_subscription_type(user_id)
             if not sub_type:
                 sub_type = "full"
-            # Создаём новую подписку (файлы обновятся, токен и месяц будут перегенерированы)
+            # Создаём новую подписку (файлы обновятся, токен не используется, но перегенерация ссылки обновит параметр t)
             new_link = create_user_subscription(user_id, days_left, sub_type, is_trial=False)
             if new_link:
                 bot.send_message(
@@ -699,7 +668,7 @@ def renew_all_links(message):
                     f"Действует до: {expiry_date}"
                 )
                 updated += 1
-                time.sleep(0.3)  # пауза, чтобы не превысить лимиты Telegram
+                time.sleep(0.3)
     bot.reply_to(message, f"✅ Обновлено ссылок для {updated} пользователей.")
 
 @bot.message_handler(commands=['check'])
@@ -1097,12 +1066,7 @@ if __name__ == "__main__":
     web_thread = Thread(target=run_web_server, daemon=True)
     web_thread.start()
     print("🌐 Веб-сервер запущен на порту 10000")
-    print("🤖 Бот запущен")
-    print("🔐 ЗАЩИТА ВКЛЮЧЕНА:")
-    print("   - Ссылки выдаются через Cloudflare Worker с проверкой подписки")
-    print("   - Параметр v (месяц) обновляется автоматически каждый месяц")
-    print("   - Для продления используйте команду /renew_all_links 1-го числа месяца")
-    print("")
+    print("🤖 Бот запущен. Репозиторий должен быть ПУБЛИЧНЫМ!")
     print("📢 ДОСТУПНЫЕ КОМАНДЫ:")
     print("   /start - Главное меню")
     print("   /profile - Мой профиль")
@@ -1113,7 +1077,7 @@ if __name__ == "__main__":
     print("   /pay - Пополнить баланс (админ)")
     print("   /users_count - Количество пользователей (админ)")
     print("   /update_all_configs - Обновить все конфиги (админ)")
-    print("   /renew_all_links - Массовое обновление ссылок для всех активных (админ)")
+    print("   /renew_all_links - Массовое обновление ссылок (админ)")
     print("   /check - Диагностика (админ)")
 
     while True:
