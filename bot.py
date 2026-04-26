@@ -495,6 +495,7 @@ def start_command(message):
     )
     keyboard.row(
         InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL)
+        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@wenwolfypack/VMiJ5OMQj8c")
     )
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
@@ -780,7 +781,7 @@ def back_main(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_def')
 def sub_def_menu(call):
-    text = "💵 **DEF-SUB**\n\n30д — 0.5 TON / 50⭐\n60д — 0.9 TON / 85⭐\n90д — 1.25 TON / 120⭐"
+    text = "💵 **DEF-SUB** — Только VPN\n\n💰 **Цены:**\n• 30 дней — 0.5 TON / 50⭐ / 50💵\n• 60 дней — 0.9 TON / 85⭐ / 90💵\n• 90 дней — 1.25 TON / 120⭐ / 135💵\n\nВыберите период:"
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="def_30"), InlineKeyboardButton("📆 60", callback_data="def_60"), InlineKeyboardButton("📆 90", callback_data="def_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
@@ -789,7 +790,8 @@ def sub_def_menu(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_ultra')
 def sub_ultra_menu(call):
-    text = "⭐ **ULTRA-SUB**\n\n30д — 0.7 TON / 75⭐\n60д — 1.2 TON / 120⭐\n90д — 1.7 TON / 170⭐"
+    text = "⭐ **ULTRA-SUB** — Лучшие серверы\n\n💰 **Цены:**\n• 30 дней — 0.7 TON / 75⭐ / 75💵\n• 60 дней — 1.2 TON / 120⭐ / 130💵\n• 90 дней — 1.7 TON / 170⭐ / 190💵\n\nВыберите период:"
+    keyboard = InlineKeyboardMarkup()
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="ultra_30"), InlineKeyboardButton("📆 60", callback_data="ultra_60"), InlineKeyboardButton("📆 90", callback_data="ultra_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
@@ -798,7 +800,8 @@ def sub_ultra_menu(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_full')
 def sub_full_menu(call):
-    text = "🔑 **FULL-SUB**\n\n30д — 1 TON / 100⭐\n60д — 1.75 TON / 170⭐\n90д — 2.5 TON / 250⭐"
+    text = "🔑 **FULL-SUB** — Все серверы\n\n💰 **Цены:**\n• 30 дней — 1 TON / 100⭐ / 100💵\n• 60 дней — 1.75 TON / 170⭐ / 170💵\n• 90 дней — 2.5 TON / 250⭐ / 275💵\n\nВыберите период:"
+    keyboard = InlineKeyboardMarkup()
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="full_30"), InlineKeyboardButton("📆 60", callback_data="full_60"), InlineKeyboardButton("📆 90", callback_data="full_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
@@ -807,7 +810,7 @@ def sub_full_menu(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'sub_fast')
 def sub_fast_menu(call):
-    text = "🛡️ **FAST-SUB**\n\n30д — 1.5 TON / 150⭐\n60д — 2.5 TON / 250⭐\n90д — 3.5 TON / 350⭐"
+    text = "🛡️ **FAST-SUB** — Максимальная скорость\n\n💰 **Цены:**\n• 30 дней — 1.5 TON / 150⭐ / 150💵\n• 60 дней — 2.5 TON / 250⭐ / 250💵\n• 90 дней — 3.5 TON / 350⭐ / 350💵\n\nВыберите период:"
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton("📆 30", callback_data="fast_30"), InlineKeyboardButton("📆 60", callback_data="fast_60"), InlineKeyboardButton("📆 90", callback_data="fast_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
