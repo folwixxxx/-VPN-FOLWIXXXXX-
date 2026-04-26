@@ -499,8 +499,8 @@ def start_command(message):
         InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn")
     )
     keyboard.row(
-        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url="https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html"))
-    )
+    InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
+)
     caption = (
         "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
         "✅ Быстрые серверы\n"
