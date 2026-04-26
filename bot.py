@@ -814,7 +814,7 @@ def sub_fast_menu(call):
     bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
-# Периоды
+# ==================== ПЕРИОДЫ ====================
 def process_period(call, sub_type, days, ton, stars, bal):
     pending_payments[call.from_user.id] = {"days": days, "sub_type": sub_type}
     keyboard = InlineKeyboardMarkup()
@@ -849,7 +849,7 @@ def fast_period(call):
     prices = {30: (1.5,150,150), 60: (2.5,250,250), 90: (3.5,350,350)}
     process_period(call, "fast", days, *prices[days])
 
-# Обработчики оплаты
+# ==================== ОБРАБОТЧИКИ ОПЛАТЫ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
