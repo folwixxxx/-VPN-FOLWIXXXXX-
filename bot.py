@@ -19,9 +19,9 @@ TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
-# Домен для Cloudflare Worker (замените на ваш)
-CLOUDFLARE_DOMAIN = "ob-hod.ru"   # ваш домен
-CLOUDFLARE_WORKER_PATH = "/vpn/get"  # путь, который обрабатывает Worker
+# Домен и путь для Cloudflare Worker
+CLOUDFLARE_DOMAIN = "ob-hod.ru"           # ваш домен
+CLOUDFLARE_WORKER_PATH = "/vpn/get"       # путь, который обрабатывает Worker
 
 # Проверка
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
