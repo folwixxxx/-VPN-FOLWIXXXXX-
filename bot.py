@@ -45,7 +45,6 @@ def is_subscribed(user_id):
         return member.status in ['member', 'administrator', 'creator']
     except Exception as e:
         print(f"Ошибка проверки подписки: {e}")
-        # Если бот не может проверить (нет прав), лучше пропустить проверку, но для безопасности считаем не подписанным
         return False
 
 def require_subscription(func):
@@ -82,7 +81,7 @@ def check_subscription_callback(call):
     else:
         bot.answer_callback_query(call.id, "Вы до сих пор не подписаны. Пожалуйста, подпишитесь и нажмите снова.", show_alert=True)
 
-# ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ (оставляем для обратной совместимости) ====================
+# ==================== ФУНКЦИИ ДЛЯ ГЕНЕРАЦИИ ТОКЕНОВ ====================
 def generate_user_token(user_id, expiry_timestamp):
     message = f"{user_id}_{expiry_timestamp}_{SECRET_KEY}"
     return hashlib.md5(message.encode()).hexdigest()[:32]
@@ -329,8 +328,11 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
     template_content = response.text
     expiry_date = datetime.now() + timedelta(days=days)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
+    expiry_timestamp = int(expiry_date.timestamp())
     
-    header = f"""# profile-title: {sub_name} {user_id}
+    # Добавляем строку для отображения времени подписки в клиентах
+    header = f"""#subscription-userinfo: upload=0; download=0; total=0; expire={expiry_timestamp}
+# profile-title: {sub_name} {user_id}
 # profile-update-interval: 1440
 # expire: {expiry_date_str}
 # days: {days}
@@ -348,7 +350,6 @@ def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
     if not success:
         return None
     
-    expiry_timestamp = int(expiry_date.timestamp())
     success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
     if not success:
         return None
@@ -848,7 +849,7 @@ def fast_period(call):
     prices = {30: (1.5,150,150), 60: (2.5,250,250), 90: (3.5,350,350)}
     process_period(call, "fast", days, *prices[days])
 
-# Обработчики оплаты (без изменений, но там могут быть вызовы create_user_subscription – они сами проверку не требуют)
+# Обработчики оплаты
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
