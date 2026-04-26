@@ -711,7 +711,7 @@ def start_command(message):
 @bot.message_handler(commands=['profile'])
 @require_subscription
 def profile_command(message):
-    user_id = message.from_user.id
+    user_id = message.from_user.id  # ВАЖНО: берем ID из message, а не фиксированный
     balance = get_balance(user_id)
     days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
     keyboard = InlineKeyboardMarkup()
@@ -952,17 +952,32 @@ def check_subs(message):
 # ==================== CALLBACK ОБРАБОТЧИКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'support')
 def support(call):
-    support_command(call.message)
+    support_command(call.message)  # Передаем message объект целиком
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'profile')
 def profile(call):
-    profile_command(call.message)
+    # ВАЖНО: создаем объект сообщения с правильным chat.id и from_user.id
+    class FakeMessage:
+        def __init__(self, user_id, chat_id):
+            self.from_user = type('obj', (object,), {'id': user_id})()
+            self.chat = type('obj', (object,), {'id': chat_id})()
+            self.id = None
+    
+    fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
+    profile_command(fake_msg)
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'refresh_config_profile')
 def refresh_profile(call):
-    refresh_config_command(call.message)
+    class FakeMessage:
+        def __init__(self, user_id, chat_id):
+            self.from_user = type('obj', (object,), {'id': user_id})()
+            self.chat = type('obj', (object,), {'id': chat_id})()
+            self.id = None
+    
+    fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
+    refresh_config_command(fake_msg)
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'buy_menu')
@@ -1107,11 +1122,6 @@ def handle_check_payment(call):
     days, amount_ton, sub_type = int(parts[1]), float(parts[2]), parts[3]
     bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
     Thread(target=monitor_payment, args=(call.from_user.id, amount_ton, days, sub_type)).start()
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'trial')
-def trial_callback(call):
-    trial_command(call.message)
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cancel')
