@@ -3,242 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>VPN - Инструкция по подключению</title>
+    <title>FOLWIXXX VPN — Инструкция</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #0a0a0a;
+            background: linear-gradient(135deg, #0a0a0a 0%, #0f0f0f 100%);
             color: #fff;
+            min-height: 100vh;
             padding: 20px;
-            line-height: 1.5;
         }
+
         .container {
-            max-width: 600px;
+            max-width: 550px;
             margin: 0 auto;
         }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+
+        /* Шапка */
+        .header {
             text-align: center;
-        }
-        .subtitle {
-            text-align: center;
-            color: #888;
             margin-bottom: 30px;
-            font-size: 14px;
+            padding: 20px 0;
         }
-        .device-card {
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #2a2a2a;
-        }
-        .device-icon {
-            font-size: 32px;
+
+        .logo {
+            font-size: 48px;
             margin-bottom: 10px;
         }
-        .device-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 15px;
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00aaff, #0066cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .step {
-            margin-bottom: 15px;
-            padding-left: 20px;
-            border-left: 2px solid #00aaff;
-        }
-        .step-num {
-            color: #00aaff;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .step-text {
-            color: #ccc;
+
+        .subtitle {
+            color: #888;
             font-size: 14px;
+            margin-top: 8px;
         }
-        .link-box {
-            background: #0a0a0a;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 12px;
-            margin-top: 10px;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 12px;
-            color: #00aaff;
-        }
-        .note {
-            background: #1a2a1a;
-            border: 1px solid #2a3a2a;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 13px;
-            color: #8bc34a;
-        }
-        .warning {
-            background: #2a1a1a;
-            border: 1px solid #aa3333;
-            border-radius: 12px;
-            padding: 15px;
+
+        /* Вкладки */
+        .tabs {
+            display: flex;
+            gap: 8px;
             margin-bottom: 20px;
-            font-size: 13px;
-            color: #ff8888;
+            background: #141414;
+            padding: 6px;
+            border-radius: 60px;
+            overflow-x: auto;
+            scrollbar-width: none;
         }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: #00aaff;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 170, 255, 0.3);
+        }
+
+        /* Контент вкладок */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Карточки инструкций */
+        .card {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #00aaff, #0066cc);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+
+        .step-desc {
+            color: #aaa;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(0, 170, 255, 0.15);
+            color: #00aaff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .link-group {
+            background: #0a0a0a;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .link-group h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #ccc;
+        }
+
+        .link-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .link-btn {
+            background: rgba(0, 170, 255, 0.1);
+            padding: 10px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            color: #00aaff;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .link-btn:active {
+            background: rgba(0, 170, 255, 0.2);
+            transform: scale(0.96);
+        }
+
+        /* Блок с советами */
+        .tips {
+            background: linear-gradient(135deg, #1a2a1a, #0f1a0f);
+            border-radius: 24px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(139, 195, 74, 0.3);
+        }
+
+        .tips h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .tip-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(139, 195, 74, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Кнопка закрытия */
+        .close-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 60px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-btn:active {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0.98);
+        }
+
         .footer {
             text-align: center;
             color: #555;
-            font-size: 12px;
-            margin-top: 30px;
-        }
-        button {
-            background: #00aaff;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 12px 20px;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
+            font-size: 11px;
             margin-top: 20px;
-            cursor: pointer;
         }
-        button:active {
-            background: #0088cc;
+
+        /* Предупреждение */
+        .warning {
+            background: rgba(255, 100, 100, 0.1);
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
-        a {
-            color: #00aaff;
-            text-decoration: none;
+
+        .warning-icon {
+            font-size: 24px;
+        }
+
+        .warning-text {
+            font-size: 13px;
+            color: #ff8888;
+            flex: 1;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📱 VPN инструкция</h1>
-        <div class="subtitle">Подключение на разных устройствах</div>
+        <div class="header">
+            <div class="logo">🛡️</div>
+            <h1>FOLWIXXX VPN</h1>
+            <div class="subtitle">Инструкция по подключению</div>
+        </div>
 
         <div class="warning">
-            ⚠️ <strong>Важно!</strong> Ссылка на подписку выдается в боте после оплаты. Получить её можно в разделе «Профиль» или после покупки.
-        </div>
-
-        <div class="device-card">
-            <div class="device-icon">🤖</div>
-            <div class="device-title">Android (v2rayNG)</div>
-            <div class="step">
-                <div class="step-num">Шаг 1</div>
-                <div class="step-text">Скачайте v2rayNG из Google Play или GitHub</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 2</div>
-                <div class="step-text">Откройте приложение → нажмите на плюс ➕ в правом верхнем углу</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 3</div>
-                <div class="step-text">Выберите «Импорт подписки из буфера» или «Добавить подписку»</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 4</div>
-                <div class="step-text">Вставьте ссылку, которую дал бот → нажмите «ОК»</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 5</div>
-                <div class="step-text">Нажмите на иконку ▶️ (треугольник) для подключения</div>
-            </div>
-            <div class="note" style="margin-top: 15px;">
-                📥 Скачать: <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayNG/releases');return false;">GitHub</a> | <a href="#" onclick="Telegram.WebApp.openLink('https://play.google.com/store/apps/details?id=com.v2ray.ang');return false;">Google Play</a>
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">
+                <strong>Важно!</strong> Ссылка на подписку выдаётся в боте после оплаты. Получить её можно в разделе «Профиль».
             </div>
         </div>
 
-        <div class="device-card">
-            <div class="device-icon">🍎</div>
-            <div class="device-title">iOS (iPhone / iPad)</div>
-            <div class="step">
-                <div class="step-num">Вариант A — NekoBox (бесплатно)</div>
-                <div class="step-text">Скачайте NekoBox из App Store → Добавьте подписку → Вставьте ссылку</div>
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="android">🤖 Android</button>
+            <button class="tab-btn" data-tab="ios">🍎 iOS</button>
+            <button class="tab-btn" data-tab="windows">🪟 Windows</button>
+            <button class="tab-btn" data-tab="macos">🍏 macOS</button>
+        </div>
+
+        <!-- Android -->
+        <div class="tab-content active" id="tab-android">
+            <div class="card">
+                <div class="badge">Рекомендуемый клиент</div>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Скачать v2rayNG</div>
+                        <div class="step-desc">Установите приложение из официального источника</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Добавить подписку</div>
+                        <div class="step-desc">Нажмите на плюс ➕ в правом верхнем углу → «Добавить подписку»</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Вставить ссылку</div>
+                        <div class="step-desc">Вставьте ссылку из бота → нажмите «ОК»</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Подключиться</div>
+                        <div class="step-desc">Нажмите на иконку ▶️ (треугольник) для подключения</div>
+                    </div>
+                </div>
             </div>
-            <div class="step">
-                <div class="step-num">Вариант B — Shadowrocket (платный)</div>
-                <div class="step-text">Скачайте Shadowrocket → Нажмите «+» → «Subscribe» → Вставьте ссылку</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Вариант C — FoXray (бесплатно)</div>
-                <div class="step-text">Скачайте FoXray → Добавьте подписку через + → укажите ссылку</div>
+            <div class="link-group">
+                <h4>📥 Где скачать:</h4>
+                <div class="link-buttons">
+                    <a href="#" class="link-btn" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayNG/releases'); return false;">🐙 GitHub</a>
+                    <a href="#" class="link-btn" onclick="Telegram.WebApp.openLink('https://play.google.com/store/apps/details?id=com.v2ray.ang'); return false;">▶️ Google Play</a>
+                </div>
             </div>
         </div>
 
-        <div class="device-card">
-            <div class="device-icon">🪟</div>
-            <div class="device-title">Windows (v2rayN / NekoRay)</div>
-            <div class="step">
-                <div class="step-num">Шаг 1</div>
-                <div class="step-text">Скачайте v2rayN или NekoRay с GitHub</div>
+        <!-- iOS -->
+        <div class="tab-content" id="tab-ios">
+            <div class="card">
+                <div class="badge">Бесплатные альтернативы</div>
+                <div class="step">
+                    <div class="step-num">📦</div>
+                    <div class="step-content">
+                        <div class="step-title">NekoBox (бесплатно)</div>
+                        <div class="step-desc">Скачайте в App Store → «Подписка» → «Добавить» → вставьте ссылку</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">🦊</div>
+                    <div class="step-content">
+                        <div class="step-title">FoXray (бесплатно)</div>
+                        <div class="step-desc">Скачайте в App Store → «+» → укажите ссылку на подписку</div>
+                    </div>
+                </div>
             </div>
-            <div class="step">
-                <div class="step-num">Шаг 2</div>
-                <div class="step-text">Распакуйте архив и запустите программу</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 3</div>
-                <div class="step-text">Нажмите «Подписки» → «Добавить подписку» → Вставьте ссылку</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 4</div>
-                <div class="step-text">ПКМ на сервере → «Выбрать активный сервер» → Включите прокси в трее</div>
-            </div>
-            <div class="note" style="margin-top: 15px;">
-                📥 Скачать: <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayN/releases');return false;">v2rayN</a> | <a href="#" onclick="Telegram.WebApp.openLink('https://github.com/MatsuriDayo/nekoray/releases');return false;">NekoRay</a>
-            </div>
-        </div>
-
-        <div class="device-card">
-            <div class="device-icon">🍏</div>
-            <div class="device-title">macOS (NekoRay)</div>
-            <div class="step">
-                <div class="step-num">Шаг 1</div>
-                <div class="step-text">Скачайте NekoRay для macOS с GitHub</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 2</div>
-                <div class="step-text">Запустите, нажмите «Подписки» → «Добавить подписку»</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 3</div>
-                <div class="step-text">Вставьте ссылку от бота, сохраните</div>
-            </div>
-            <div class="step">
-                <div class="step-num">Шаг 4</div>
-                <div class="step-text">Включите «Tun» или «Системный прокси»</div>
+            <div class="card" style="margin-top: 16px;">
+                <div class="badge">Платный клиент</div>
+                <div class="step">
+                    <div class="step-num">🎭</div>
+                    <div class="step-content">
+                        <div class="step-title">Shadowrocket</div>
+                        <div class="step-desc">Скачайте в App Store → «+» → «Subscribe» → вставьте ссылку</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="note">
-            💡 <strong>Советы:</strong><br>
-            • Если не работает — попробуйте удалить подписку и добавить заново<br>
-            • Обновляйте подписку после продления (нажмите на подписку → «Обновить»)<br>
-            • Для просмотра даты истечения используйте команду /profile<br>
-            • При проблемах пишите в поддержку @ylvvvl
+        <!-- Windows -->
+        <div class="tab-content" id="tab-windows">
+            <div class="card">
+                <div class="badge">Для Windows 10/11</div>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Скачать клиент</div>
+                        <div class="step-desc">Выберите v2rayN или NekoRay</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Распаковать и запустить</div>
+                        <div class="step-desc">Извлеките архив и запустите программу</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Добавить подписку</div>
+                        <div class="step-desc">«Подписки» → «Добавить подписку» → вставьте ссылку</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Активировать</div>
+                        <div class="step-desc">ПКМ на сервере → «Выбрать активный» → включите прокси в трее</div>
+                    </div>
+                </div>
+            </div>
+            <div class="link-group">
+                <h4>📥 Где скачать:</h4>
+                <div class="link-buttons">
+                    <a href="#" class="link-btn" onclick="Telegram.WebApp.openLink('https://github.com/2dust/v2rayN/releases'); return false;">🔷 v2rayN</a>
+                    <a href="#" class="link-btn" onclick="Telegram.WebApp.openLink('https://github.com/MatsuriDayo/nekoray/releases'); return false;">🌀 NekoRay</a>
+                </div>
+            </div>
         </div>
 
-        <button onclick="Telegram.WebApp.close()">✖️ Закрыть</button>
-        <div class="footer">
-            FOLWIXXX VPN © 2026
+        <!-- macOS -->
+        <div class="tab-content" id="tab-macos">
+            <div class="card">
+                <div class="badge">Для Mac на Apple Silicon / Intel</div>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Скачать NekoRay</div>
+                        <div class="step-desc">Загрузите версию для macOS с GitHub</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Запустить</div>
+                        <div class="step-desc">Распакуйте и откройте приложение</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Добавить подписку</div>
+                        <div class="step-desc">«Подписки» → «Добавить подписку» → вставьте ссылку</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Включить</div>
+                        <div class="step-desc">Активируйте «Tun» или «Системный прокси»</div>
+                    </div>
+                </div>
+            </div>
+            <div class="link-group">
+                <h4>📥 Где скачать:</h4>
+                <div class="link-buttons">
+                    <a href="#" class="link-btn" onclick="Telegram.WebApp.openLink('https://github.com/MatsuriDayo/nekoray/releases'); return false;">🌀 NekoRay для macOS</a>
+                </div>
+            </div>
         </div>
+
+        <!-- Советы -->
+        <div class="tips">
+            <h3>💡 Полезные советы</h3>
+            <div class="tip-item">
+                <div class="tip-icon">🔄</div>
+                <div>После продления подписки обновите её в приложении (нажмите на подписку → «Обновить»)</div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">🗑️</div>
+                <div>Если не работает — удалите подписку и добавьте заново</div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">📅</div>
+                <div>Проверить дату истечения можно командой /profile в боте</div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">📨</div>
+                <div>Проблемы? Пишите поддержке: @ylvvvl</div>
+            </div>
+        </div>
+
+        <button class="close-btn" onclick="Telegram.WebApp.close()">✖️ Закрыть</button>
+        <div class="footer">FOLWIXXX VPN — быстрый и безопасный VPN</div>
     </div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-        if (Telegram.WebApp) {
+        // Инициализация Telegram Mini App
+        if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
             Telegram.WebApp.setHeaderColor('#0a0a0a');
             Telegram.WebApp.setBackgroundColor('#0a0a0a');
         }
+
+        // Переключение вкладок
+        const tabs = document.querySelectorAll('.tab-btn');
+        const contents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                
+                tabs.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                contents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${tabId}`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
