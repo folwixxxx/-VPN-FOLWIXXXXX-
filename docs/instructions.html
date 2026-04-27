@@ -146,7 +146,6 @@
             letter-spacing: 1px;
         }
 
-        /* Кнопка темы */
         .theme-btn {
             position: fixed;
             top: 20px;
@@ -201,7 +200,6 @@
         .color-dot.purple { background: #aa00ff; }
         .color-dot.orange { background: #ff6600; }
 
-        /* Кнопка переключения языка */
         .lang-btn {
             position: fixed;
             top: 20px;
@@ -224,7 +222,6 @@
 
         .lang-btn:hover { transform: scale(1.05); background: var(--accent-light); }
 
-        /* Плавающая кнопка помощи */
         .fab-help {
             position: fixed;
             bottom: 30px;
@@ -277,7 +274,6 @@
 
         .help-item:hover { background: var(--accent-light); }
 
-        /* КАРТОЧКА ПОДПИСКИ */
         .subscription-card {
             background: rgba(10, 10, 20, 0.6);
             backdrop-filter: blur(12px);
@@ -978,7 +974,6 @@
     <div class="toast" id="toast">✨ COPIED!</div>
 
     <script>
-        // ПЕРЕВОДЫ
         const translations = {
             ru: {
                 subtitle: "ИНСТРУКЦИЯ ПО ПОДКЛЮЧЕНИЮ",
@@ -1141,7 +1136,7 @@
             const newLang = currentLang === 'ru' ? 'en' : 'ru';
             setLanguage(newLang);
             showToast(currentLang === 'ru' ? '🌐 Язык изменён на Русский' : '🌐 Language changed to English');
-            loadSubscription(); // обновляем текст подписки
+            loadSubscription();
         });
 
         if (window.Telegram && Telegram.WebApp) {
@@ -1197,14 +1192,19 @@
         window.addEventListener('load', () => setTimeout(updateSlider, 50));
         window.addEventListener('resize', updateSlider);
 
-        // ПОДПИСКА — ПРИВЯЗКА К ПОЛЬЗОВАТЕЛЮ
+        // Глобальная переменная для репозитория
+        const GITHUB_REPO = "folwixxxx/-VPN-FOLWIXXXXX-";
+        const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
+
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('user_id');
         let expiryTimestamp = null;
+        let heartbeatInterval = null;
 
         function updateTimer() {
             if (!expiryTimestamp) {
-                document.getElementById('countdownTimer').textContent = 'NO SUB';
+                const timerEl = document.getElementById('countdownTimer');
+                if (timerEl) timerEl.textContent = currentLang === 'ru' ? 'НЕТ ПОДПИСКИ' : 'NO SUB';
                 return;
             }
             const diff = expiryTimestamp - Math.floor(Date.now() / 1000);
@@ -1219,7 +1219,10 @@
         }
 
         async function loadSubscription() {
+            console.log("🔍 Загрузка подписки для user_id:", userId);
+            
             if (!userId) {
+                console.log("⚠️ Демо-режим: user_id не передан");
                 document.getElementById('subBadge').textContent = currentLang === 'ru' ? 'ДЕМО-РЕЖИМ' : 'DEMO MODE';
                 document.getElementById('subExpiry').textContent = '01.05.2026';
                 document.getElementById('subDaysLeft').textContent = '6';
@@ -1228,7 +1231,8 @@
                 document.getElementById('statType').textContent = 'DEMO';
                 document.getElementById('subProgress').style.width = '80%';
                 expiryTimestamp = Math.floor(Date.now() / 1000) + 6 * 86400;
-                setInterval(updateTimer, 1000);
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                heartbeatInterval = setInterval(updateTimer, 1000);
                 return;
             }
 
@@ -1237,16 +1241,27 @@
 
             for (const folder of folders) {
                 try {
-                    const url = `https://api.github.com/repos/folwixxxx/-VPN-FOLWIXXXXX-/contents/subscriptions/${folder}/user_${userId}.expiry`;
-                    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github.v3+json' } });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const ts = parseInt(atob(data.content), 10);
+                    // Пробуем через raw.githubusercontent.com (работает без CORS)
+                    const expiryUrl = `${RAW_BASE}/subscriptions/${folder}/user_${userId}.expiry`;
+                    console.log(`📡 Проверяем: ${expiryUrl}`);
+                    
+                    const response = await fetch(expiryUrl);
+                    
+                    if (response.ok) {
+                        const expiryContent = await response.text();
+                        const ts = parseInt(expiryContent.trim(), 10);
                         const now = Math.floor(Date.now() / 1000);
-                        if (now > ts) continue;
+                        
+                        if (isNaN(ts)) continue;
+                        if (now > ts) {
+                            console.log(`⏰ Подписка в ${folder} истекла`);
+                            continue;
+                        }
 
+                        console.log(`✅ Найдена активная подписка в ${folder}, истекает: ${ts}`);
                         expiryTimestamp = ts;
-                        setInterval(updateTimer, 1000);
+                        if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        heartbeatInterval = setInterval(updateTimer, 1000);
                         updateTimer();
 
                         const daysLeft = Math.ceil((ts - now) / 86400);
@@ -1261,25 +1276,36 @@
                         document.getElementById('statDays').textContent = daysLeft;
                         document.getElementById('statUsed').textContent = `${Math.round((1 - daysLeft / 30) * 100)}%`;
                         document.getElementById('statType').textContent = name;
-                        document.getElementById('subProgress').style.width = `${(daysLeft / 30) * 100}%`;
+                        
+                        const percentWidth = (daysLeft / 30) * 100;
+                        document.getElementById('subProgress').style.width = `${Math.min(100, Math.max(0, percentWidth))}%`;
 
                         if (daysLeft <= 3) {
                             const warningText = currentLang === 'ru' ? '⚠️ СКОРО ЗАКОНЧИТСЯ! ПРОДЛИТЕ В БОТЕ' : '⚠️ EXPIRING SOON! RENEW IN BOT';
                             document.getElementById('subWarning').textContent = warningText;
+                        } else {
+                            document.getElementById('subWarning').textContent = '';
                         }
                         return;
+                    } else {
+                        console.log(`❌ Файл не найден: ${expiryUrl}, статус: ${response.status}`);
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.error(`⚠️ Ошибка при проверке ${folder}:`, e.message);
+                }
             }
 
+            console.log("❌ Активная подписка не найдена ни в одной папке");
             const noSubText = currentLang === 'ru' ? '❌ НЕТ АКТИВНОЙ ПОДПИСКИ' : '❌ NO ACTIVE SUB';
-            const warningText = currentLang === 'ru' ? '⚠️ НЕТ АКТИВНОЙ ПОДПИСКИ' : '⚠️ NO ACTIVE SUBSCRIPTION';
+            const warningText = currentLang === 'ru' ? '⚠️ НЕТ АКТИВНОЙ ПОДПИСКИ. ПЕРЕЙДИТЕ В БОТ ДЛЯ ПОКУПКИ' : '⚠️ NO ACTIVE SUBSCRIPTION. GO TO BOT TO PURCHASE';
             document.getElementById('subBadge').textContent = noSubText;
             document.getElementById('statDays').textContent = '0';
             document.getElementById('statUsed').textContent = '100%';
             document.getElementById('statType').textContent = '—';
             document.getElementById('subProgress').style.width = '0%';
             document.getElementById('subWarning').textContent = warningText;
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            document.getElementById('countdownTimer').textContent = currentLang === 'ru' ? 'НЕТ ПОДПИСКИ' : 'NO SUB';
         }
 
         loadSubscription();
@@ -1327,7 +1353,7 @@
         }
         loadChecklist();
 
-        // ТЕМА — теперь меняет все цвета через CSS переменные
+        // ТЕМА
         const themeBtn = document.getElementById('themeBtn');
         const themeMenu = document.getElementById('themeMenu');
         document.querySelectorAll('.theme-option').forEach(opt => {
