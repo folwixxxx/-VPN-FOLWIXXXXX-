@@ -47,102 +47,22 @@ LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXX
 
 # ==================== ВСЕ СЕРВЕРЫ ДЛЯ КОНФИГА ====================
 SERVER_OUTBOUNDS = [
-    {
-        "tag": "🇸🇪 Швеция",
-        "address": "se1.hellahillz.net",
-        "serverName": "api-maps.yandex.ru",
-        "spiderX": "/sQY4PvWWhy-j63WD"
-    },
-    {
-        "tag": "🇳🇱 Нидерланды-1",
-        "address": "nl1.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/I7E9lOYqn_zKCIrH"
-    },
-    {
-        "tag": "🇳🇱 Нидерланды-2",
-        "address": "nl2.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/I7E9lOYqn_zKCIrH"
-    },
-    {
-        "tag": "🇳🇱 Нидерланды-3",
-        "address": "nl3.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/I7E9lOYqn_zKCIrH"
-    },
-    {
-        "tag": "🇺🇸 США",
-        "address": "us.hellahillz.net",
-        "serverName": "smartcaptcha.yandexcloud.net",
-        "spiderX": "/GAdLkgm4EIWmGloo"
-    },
-    {
-        "tag": "🇩🇪 Германия-1",
-        "address": "de1.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/lMeBktGz_X4CrJW4"
-    },
-    {
-        "tag": "🇩🇪 Германия-2",
-        "address": "de3.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/lMeBktGz_X4CrJW4"
-    },
-    {
-        "tag": "🇩🇪 Германия-3",
-        "address": "de5.hellahillz.net",
-        "serverName": "max.ru",
-        "spiderX": "/lMeBktGz_X4CrJW4"
-    },
-    {
-        "tag": "🇫🇮 Финляндия-1",
-        "address": "fi2.hellahillz.net",
-        "serverName": "5post-gate.x5.ru",
-        "spiderX": "/FBpmkpJEzwiJNY49"
-    },
-    {
-        "tag": "🇫🇮 Финляндия-2",
-        "address": "fi3.hellahillz.net",
-        "serverName": "5post-gate.x5.ru",
-        "spiderX": "/FBpmkpJEzwiJNY49"
-    },
-    {
-        "tag": "🇵🇱 Польша-1",
-        "address": "pl1.hellahillz.net",
-        "serverName": "5post-gate.x5.ru",
-        "spiderX": "/-HJtn9M1T1z65cFq"
-    },
-    {
-        "tag": "🇵🇱 Польша-2",
-        "address": "pl2.hellahillz.net",
-        "serverName": "5post-gate.x5.ru",
-        "spiderX": "/-HJtn9M1T1z65cFq"
-    },
-    {
-        "tag": "🇵🇱 Польша-3",
-        "address": "pl3.hellahillz.net",
-        "serverName": "5post-gate.x5.ru",
-        "spiderX": "/-HJtn9M1T1z65cFq"
-    },
-    {
-        "tag": "🇨🇿 Чехия",
-        "address": "cz.hellahillz.net",
-        "serverName": "ya.ru",
-        "spiderX": "/D-hYPVL7F0EXf0lD"
-    },
-    {
-        "tag": "🇱🇻 Латвия-1",
-        "address": "lv1.hellahillz.net",
-        "serverName": "sun9-37.userapi.com",
-        "spiderX": "/SLBpDI4hSZpKOIdZ"
-    },
-    {
-        "tag": "🇱🇻 Латвия-2",
-        "address": "lv2.hellahillz.net",
-        "serverName": "sun9-37.userapi.com",
-        "spiderX": "/SLBpDI4hSZpKOIdZ"
-    }
+    {"tag": "🇸🇪 Швеция", "address": "se1.hellahillz.net", "serverName": "api-maps.yandex.ru", "spiderX": "/sQY4PvWWhy-j63WD"},
+    {"tag": "🇳🇱 Нидерланды-1", "address": "nl1.hellahillz.net", "serverName": "max.ru", "spiderX": "/I7E9lOYqn_zKCIrH"},
+    {"tag": "🇳🇱 Нидерланды-2", "address": "nl2.hellahillz.net", "serverName": "max.ru", "spiderX": "/I7E9lOYqn_zKCIrH"},
+    {"tag": "🇳🇱 Нидерланды-3", "address": "nl3.hellahillz.net", "serverName": "max.ru", "spiderX": "/I7E9lOYqn_zKCIrH"},
+    {"tag": "🇺🇸 США", "address": "us.hellahillz.net", "serverName": "smartcaptcha.yandexcloud.net", "spiderX": "/GAdLkgm4EIWmGloo"},
+    {"tag": "🇩🇪 Германия-1", "address": "de1.hellahillz.net", "serverName": "max.ru", "spiderX": "/lMeBktGz_X4CrJW4"},
+    {"tag": "🇩🇪 Германия-2", "address": "de3.hellahillz.net", "serverName": "max.ru", "spiderX": "/lMeBktGz_X4CrJW4"},
+    {"tag": "🇩🇪 Германия-3", "address": "de5.hellahillz.net", "serverName": "max.ru", "spiderX": "/lMeBktGz_X4CrJW4"},
+    {"tag": "🇫🇮 Финляндия-1", "address": "fi2.hellahillz.net", "serverName": "5post-gate.x5.ru", "spiderX": "/FBpmkpJEzwiJNY49"},
+    {"tag": "🇫🇮 Финляндия-2", "address": "fi3.hellahillz.net", "serverName": "5post-gate.x5.ru", "spiderX": "/FBpmkpJEzwiJNY49"},
+    {"tag": "🇵🇱 Польша-1", "address": "pl1.hellahillz.net", "serverName": "5post-gate.x5.ru", "spiderX": "/-HJtn9M1T1z65cFq"},
+    {"tag": "🇵🇱 Польша-2", "address": "pl2.hellahillz.net", "serverName": "5post-gate.x5.ru", "spiderX": "/-HJtn9M1T1z65cFq"},
+    {"tag": "🇵🇱 Польша-3", "address": "pl3.hellahillz.net", "serverName": "5post-gate.x5.ru", "spiderX": "/-HJtn9M1T1z65cFq"},
+    {"tag": "🇨🇿 Чехия", "address": "cz.hellahillz.net", "serverName": "ya.ru", "spiderX": "/D-hYPVL7F0EXf0lD"},
+    {"tag": "🇱🇻 Латвия-1", "address": "lv1.hellahillz.net", "serverName": "sun9-37.userapi.com", "spiderX": "/SLBpDI4hSZpKOIdZ"},
+    {"tag": "🇱🇻 Латвия-2", "address": "lv2.hellahillz.net", "serverName": "sun9-37.userapi.com", "spiderX": "/SLBpDI4hSZpKOIdZ"}
 ]
 
 # Шаблон одного outbound сервера
@@ -419,10 +339,10 @@ def github_upload_file(filename, content, folder=""):
 def github_get_file_content(filepath):
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        return None
     try:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return None
         content = base64.b64decode(response.json()["content"]).decode('utf-8')
         return content
     except:
@@ -447,7 +367,7 @@ def save_user(user_id):
         return True
     return False
 
-def generate_full_config(user_id, days):
+def generate_full_config_content(user_id, days):
     """Генерирует конфиг со ВСЕМИ серверами"""
     outbounds_list = []
     for server in SERVER_OUTBOUNDS:
@@ -465,23 +385,67 @@ def generate_full_config(user_id, days):
     )
     return config
 
-def generate_trial_config(user_id):
-    """Генерирует конфиг для пробного периода со ВСЕМИ серверами"""
-    outbounds_list = []
-    for server in SERVER_OUTBOUNDS:
-        outbound = OUTBOUND_TEMPLATE.format(
-            tag=server["tag"],
-            address=server["address"],
-            serverName=server["serverName"],
-            spiderX=server["spiderX"]
-        )
-        outbounds_list.append(outbound)
+def create_subscription(user_id, days):
+    """Создаёт подписку для пользователя"""
+    filename = f"user_{user_id}"
+    folder = "all-sub"
     
-    config = FULL_CONFIG_TEMPLATE.format(
-        outbounds_list=",".join(outbounds_list),
-        remarks=f"🎁 TRIAL ALL-SUB {user_id} (1 день, 16 серверов)"
-    )
-    return config
+    # Генерируем конфиг
+    config_content = generate_full_config_content(user_id, days)
+    
+    # Вычисляем дату истечения
+    expiry_date = datetime.now() + timedelta(days=days)
+    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
+    expiry_timestamp = int(expiry_date.timestamp())
+    
+    # Формируем заголовок
+    header = f"""#subscription-userinfo: upload=0; download=0; total=0; expire={expiry_timestamp}
+# profile-title: ALL-SUB {user_id}
+# profile-update-interval: 1440
+# expire: {expiry_date_str}
+# days: {days}
+# servers: 16
+# created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+"""
+    full_content = header + config_content
+    
+    # Сохраняем в GitHub
+    success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
+    if not success:
+        print(f"❌ Ошибка загрузки config файла для {user_id}")
+        return None
+    
+    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
+    if not success:
+        print(f"❌ Ошибка загрузки expiry файла для {user_id}")
+        return None
+    
+    github_upload_file(f"{filename}.type", "all", folder=f"subscriptions/{folder}")
+    
+    # Генерируем ссылку с токеном
+    token = generate_user_token(user_id, expiry_timestamp)
+    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
+
+def get_user_subscription_info(user_id):
+    """Получает информацию о подписке пользователя"""
+    content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
+    if content:
+        try:
+            expiry_timestamp = int(content.strip())
+            now = int(time.time())
+            if now > expiry_timestamp:
+                return None, None, None
+            days_left = (expiry_timestamp - now) // 86400
+            expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S")
+            
+            token = generate_user_token(user_id, expiry_timestamp)
+            subscription_link = f"{RAW_BASE}/subscriptions/all-sub/user_{user_id}.txt?token={token}&t={int(time.time())}"
+            return days_left, expiry_date, subscription_link
+        except Exception as e:
+            print(f"Ошибка: {e}")
+            return None, None, None
+    return None, None, None
 
 # ==================== ФУНКЦИИ БАЛАНСА ====================
 def get_balance(user_id):
@@ -629,58 +593,8 @@ def handle_successful_payment(message):
                 f"4. Нажмите ▶️ для подключения"
             )
             bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д\n📦 ALL-SUB (16 серверов)")
-
-# ==================== ФУНКЦИИ ПОДПИСОК ====================
-def create_subscription(user_id, days=30, is_trial=False):
-    filename = f"user_{user_id}"
-    folder = "all-sub"
-    
-    if is_trial:
-        config_content = generate_trial_config(user_id)
-    else:
-        config_content = generate_full_config(user_id, days)
-    
-    expiry_date = datetime.now() + timedelta(days=days)
-    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
-    expiry_timestamp = int(expiry_date.timestamp())
-    
-    header = f"""#subscription-userinfo: upload=0; download=0; total=0; expire={expiry_timestamp}
-# profile-title: ALL-SUB {user_id}
-# profile-update-interval: 1440
-# expire: {expiry_date_str}
-# days: {days}
-# servers: 16
-# created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-"""
-    full_content = header + config_content
-    
-    success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
-    if not success:
-        return None
-    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
-    if not success:
-        return None
-    github_upload_file(f"{filename}.type", "all", folder=f"subscriptions/{folder}")
-    
-    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
-
-def get_user_subscription_info(user_id):
-    content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
-    if content:
-        try:
-            expiry_timestamp = int(content.strip())
-            now = int(time.time())
-            if now > expiry_timestamp:
-                return None, None, None
-            days_left = (expiry_timestamp - now) // 86400
-            expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S")
-            subscription_link = f"{RAW_BASE}/subscriptions/all-sub/user_{user_id}.txt?t={int(time.time())}"
-            return days_left, expiry_date, subscription_link
-        except Exception as e:
-            print(f"Ошибка: {e}")
-            return None, None, None
-    return None, None, None
+        else:
+            bot.send_message(user_id, "❌ Ошибка при создании подписки")
 
 # ==================== ЛОКАЦИИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
@@ -881,7 +795,7 @@ def trial_command(message):
         bot.reply_to(message, "❌ У вас уже есть активная подписка!")
         return
     
-    link = create_subscription(user_id, 1, is_trial=True)
+    link = create_subscription(user_id, 1)
     if link:
         github_upload_file(f"trial_{user_id}", "used", folder="trials")
         bot.send_message(
@@ -926,8 +840,8 @@ def refresh_config_command(message):
         bot.reply_to(message, "❌ У вас нет активной подписки!")
         return
     
-    success = create_subscription(user_id, days_left, is_trial=False)
-    if success:
+    link = create_subscription(user_id, days_left)
+    if link:
         _, _, new_link = get_user_subscription_info(user_id)
         bot.reply_to(
             message,
@@ -983,11 +897,13 @@ def handle_balance_payment(call):
         bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
         return
     
+    # Списываем баланс
     success, new_balance = deduct_balance(user_id, balance_amount)
     if not success:
-        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Ошибка при списании средств", show_alert=True)
         return
     
+    # Создаём подписку
     link = create_subscription(user_id, days)
     if link:
         bot.edit_message_text(
@@ -1003,8 +919,17 @@ def handle_balance_payment(call):
         )
         bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📅 {days}д\n📦 ALL-SUB (16 серверов)")
         bot.answer_callback_query(call.id, "✅ Оплачено!")
+        pending_payments.pop(user_id, None)
     else:
+        # Если ошибка — возвращаем деньги
         update_balance(user_id, balance_amount)
+        bot.edit_message_text(
+            "❌ **Ошибка при создании подписки!**\n\n"
+            "Средства возвращены на ваш баланс.\n"
+            "Попробуйте позже или обратитесь в поддержку.",
+            call.message.chat.id, call.message.message_id,
+            parse_mode='Markdown'
+        )
         bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('ton_'))
