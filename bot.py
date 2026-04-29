@@ -259,17 +259,6 @@ def verify_user_token(user_id, token, expiry_timestamp):
     return hmac.compare_digest(expected, token)
 
 def get_user_subscription_folder(user_id):
-    # Проверяем через API (более надёжно)
-    url = f"{API_BASE}/contents/subscriptions/all-sub/user_{user_id}.expiry"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            return "all-sub"
-    except:
-        pass
-    
-    # Резервный вариант через raw
     if github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry"):
         return "all-sub"
     return None
@@ -335,7 +324,7 @@ def github_upload_file(filename, content, folder=""):
         full_path = f"{folder}/{filename}"
     else:
         full_path = filename
-    url = f"{API_BASE}/contents/{full_path}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
@@ -349,13 +338,25 @@ def github_upload_file(filename, content, folder=""):
         data["sha"] = response.json()["sha"]
     elif response.status_code == 404:
         data["message"] = f"Create {full_path}"
+    else:
+        # Ошибка при проверке
+        error_msg = f"GitHub API error (GET): {response.status_code} - {response.text[:200]}"
+        print(error_msg)
+        bot.send_message(YOUR_ADMIN_ID, f"⚠️ GitHub ошибка при проверке:\n{error_msg}")
+        return False
     
     result = requests.put(url, headers=headers, json=data)
-    print(f"📤 Загрузка {full_path}: {result.status_code}")
-    return result.status_code in [200, 201]
+    if result.status_code not in [200, 201]:
+        error_msg = f"GitHub API error (PUT): {result.status_code} - {result.text[:200]}"
+        print(error_msg)
+        bot.send_message(YOUR_ADMIN_ID, f"⚠️ GitHub ошибка при загрузке:\n{error_msg}\n\nФайл: {full_path}")
+        return False
+    
+    print(f"✅ Загружено: {full_path}")
+    return True
 
 def github_get_file_content(filepath):
-    url = f"{API_BASE}/contents/{filepath}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         response = requests.get(url, headers=headers)
@@ -407,20 +408,28 @@ def generate_full_config_content(user_id, days):
 def create_subscription(user_id, days):
     """Создаёт подписку для пользователя"""
     print(f"📝 Создание подписки для user_id={user_id}, days={days}")
+    bot.send_message(YOUR_ADMIN_ID, f"🔄 Начинаю создание подписки для user_id={user_id}, days={days}")
+    
     filename = f"user_{user_id}"
     folder = "all-sub"
     
-    # Проверяем существование папки subscriptions/all-sub
-    try:
-        url = f"{API_BASE}/contents/subscriptions/{folder}"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-        response = requests.get(url, headers=headers)
-        if response.status_code == 404:
-            print(f"📁 Создаю папку {folder}")
-            # Создаём .gitkeep файл для создания папки
-            github_upload_file(".gitkeep", "", folder=f"subscriptions/{folder}")
-    except Exception as e:
-        print(f"⚠️ Ошибка при проверке папки: {e}")
+    # Проверяем/создаём папку
+    folder_path = f"subscriptions/{folder}"
+    folder_check_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{folder_path}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    folder_resp = requests.get(folder_check_url, headers=headers)
+    
+    if folder_resp.status_code == 404:
+        print(f"📁 Папка {folder_path} не найдена, создаю...")
+        # Создаём .gitkeep для создания папки
+        keep_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{folder_path}/.gitkeep"
+        keep_data = {
+            "message": "Create folder",
+            "content": base64.b64encode(b"").decode('utf-8')
+        }
+        keep_resp = requests.put(keep_url, headers=headers, json=keep_data)
+        if keep_resp.status_code not in [200, 201]:
+            bot.send_message(YOUR_ADMIN_ID, f"⚠️ Не удалось создать папку {folder_path}: {keep_resp.status_code}")
     
     # Генерируем конфиг
     config_content = generate_full_config_content(user_id, days)
@@ -444,15 +453,17 @@ def create_subscription(user_id, days):
     
     # Сохраняем в GitHub
     print(f"📤 Сохраняем config файл...")
-    success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
-    if not success:
+    success1 = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
+    if not success1:
         print(f"❌ Ошибка загрузки config файла для {user_id}")
+        bot.send_message(YOUR_ADMIN_ID, f"❌ Ошибка: не удалось загрузить config файл для user_id={user_id}")
         return None
     
     print(f"📤 Сохраняем expiry файл...")
-    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
-    if not success:
+    success2 = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
+    if not success2:
         print(f"❌ Ошибка загрузки expiry файла для {user_id}")
+        bot.send_message(YOUR_ADMIN_ID, f"❌ Ошибка: не удалось загрузить expiry файл для user_id={user_id}")
         return None
     
     print(f"📤 Сохраняем type файл...")
@@ -462,6 +473,7 @@ def create_subscription(user_id, days):
     token = generate_user_token(user_id, expiry_timestamp)
     link = f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
     print(f"✅ Подписка создана: {link}")
+    bot.send_message(YOUR_ADMIN_ID, f"✅ Подписка успешно создана для user_id={user_id}\n🔗 {link}")
     return link
 
 def get_user_subscription_info(user_id):
