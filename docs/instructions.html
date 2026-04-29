@@ -1236,66 +1236,73 @@
                 return;
             }
 
-            const folders = ['def-sub', 'ultra-sub', 'full-sub', 'fast-sub', 'trial-sub'];
-            const names = { 'def': 'DEF', 'ultra': 'ULTRA', 'full': 'FULL', 'fast': 'FAST', 'trial': 'TRIAL' };
-
-            for (const folder of folders) {
-                try {
-                    // Пробуем через raw.githubusercontent.com (работает без CORS)
-                    const expiryUrl = `${RAW_BASE}/subscriptions/${folder}/user_${userId}.expiry`;
-                    console.log(`📡 Проверяем: ${expiryUrl}`);
+            // ТОЛЬКО ALL-SUB — единая подписка
+            const folder = "all-sub";
+            
+            try {
+                const expiryUrl = `${RAW_BASE}/subscriptions/${folder}/user_${userId}.expiry`;
+                console.log(`📡 Проверяем: ${expiryUrl}`);
+                
+                const response = await fetch(expiryUrl);
+                
+                if (response.ok) {
+                    const expiryContent = await response.text();
+                    const ts = parseInt(expiryContent.trim(), 10);
+                    const now = Math.floor(Date.now() / 1000);
                     
-                    const response = await fetch(expiryUrl);
-                    
-                    if (response.ok) {
-                        const expiryContent = await response.text();
-                        const ts = parseInt(expiryContent.trim(), 10);
-                        const now = Math.floor(Date.now() / 1000);
-                        
-                        if (isNaN(ts)) continue;
-                        if (now > ts) {
-                            console.log(`⏰ Подписка в ${folder} истекла`);
-                            continue;
-                        }
-
-                        console.log(`✅ Найдена активная подписка в ${folder}, истекает: ${ts}`);
-                        expiryTimestamp = ts;
-                        if (heartbeatInterval) clearInterval(heartbeatInterval);
-                        heartbeatInterval = setInterval(updateTimer, 1000);
-                        updateTimer();
-
-                        const daysLeft = Math.ceil((ts - now) / 86400);
-                        const date = new Date(ts * 1000).toLocaleDateString('ru-RU');
-                        const type = folder.replace('-sub', '');
-                        const name = names[type] || 'VPN';
-
-                        const activeText = currentLang === 'ru' ? 'АКТИВНА' : 'ACTIVE';
-                        document.getElementById('subBadge').textContent = `✅ ${name}-SUB ${activeText}`;
-                        document.getElementById('subExpiry').textContent = date;
-                        document.getElementById('subDaysLeft').textContent = daysLeft;
-                        document.getElementById('statDays').textContent = daysLeft;
-                        document.getElementById('statUsed').textContent = `${Math.round((1 - daysLeft / 30) * 100)}%`;
-                        document.getElementById('statType').textContent = name;
-                        
-                        const percentWidth = (daysLeft / 30) * 100;
-                        document.getElementById('subProgress').style.width = `${Math.min(100, Math.max(0, percentWidth))}%`;
-
-                        if (daysLeft <= 3) {
-                            const warningText = currentLang === 'ru' ? '⚠️ СКОРО ЗАКОНЧИТСЯ! ПРОДЛИТЕ В БОТЕ' : '⚠️ EXPIRING SOON! RENEW IN BOT';
-                            document.getElementById('subWarning').textContent = warningText;
-                        } else {
-                            document.getElementById('subWarning').textContent = '';
-                        }
+                    if (isNaN(ts)) {
+                        console.log("❌ Неверный формат timestamp");
+                        showNoSubscription();
                         return;
-                    } else {
-                        console.log(`❌ Файл не найден: ${expiryUrl}, статус: ${response.status}`);
                     }
-                } catch(e) {
-                    console.error(`⚠️ Ошибка при проверке ${folder}:`, e.message);
-                }
-            }
+                    
+                    if (now > ts) {
+                        console.log(`⏰ Подписка истекла`);
+                        showNoSubscription();
+                        return;
+                    }
 
-            console.log("❌ Активная подписка не найдена ни в одной папке");
+                    console.log(`✅ Найдена активная подписка, истекает: ${ts}`);
+                    expiryTimestamp = ts;
+                    if (heartbeatInterval) clearInterval(heartbeatInterval);
+                    heartbeatInterval = setInterval(updateTimer, 1000);
+                    updateTimer();
+
+                    const daysLeft = Math.ceil((ts - now) / 86400);
+                    const date = new Date(ts * 1000).toLocaleDateString('ru-RU');
+
+                    const activeText = currentLang === 'ru' ? 'АКТИВНА' : 'ACTIVE';
+                    document.getElementById('subBadge').textContent = `✅ ALL-SUB ${activeText}`;
+                    document.getElementById('subExpiry').textContent = date;
+                    document.getElementById('subDaysLeft').textContent = daysLeft;
+                    document.getElementById('statDays').textContent = daysLeft;
+                    
+                    const usedPercent = Math.round((1 - daysLeft / 30) * 100);
+                    document.getElementById('statUsed').textContent = `${Math.min(100, Math.max(0, usedPercent))}%`;
+                    document.getElementById('statType').textContent = 'ALL';
+                    
+                    const percentWidth = (daysLeft / 30) * 100;
+                    document.getElementById('subProgress').style.width = `${Math.min(100, Math.max(0, percentWidth))}%`;
+
+                    if (daysLeft <= 3) {
+                        const warningText = currentLang === 'ru' ? '⚠️ СКОРО ЗАКОНЧИТСЯ! ПРОДЛИТЕ В БОТЕ' : '⚠️ EXPIRING SOON! RENEW IN BOT';
+                        document.getElementById('subWarning').textContent = warningText;
+                    } else {
+                        document.getElementById('subWarning').textContent = '';
+                    }
+                    return;
+                } else {
+                    console.log(`❌ Файл не найден: ${expiryUrl}, статус: ${response.status}`);
+                    showNoSubscription();
+                }
+            } catch(e) {
+                console.error(`⚠️ Ошибка при проверке подписки:`, e.message);
+                showNoSubscription();
+            }
+        }
+        
+        function showNoSubscription() {
+            console.log("❌ Активная подписка не найдена");
             const noSubText = currentLang === 'ru' ? '❌ НЕТ АКТИВНОЙ ПОДПИСКИ' : '❌ NO ACTIVE SUB';
             const warningText = currentLang === 'ru' ? '⚠️ НЕТ АКТИВНОЙ ПОДПИСКИ. ПЕРЕЙДИТЕ В БОТ ДЛЯ ПОКУПКИ' : '⚠️ NO ACTIVE SUBSCRIPTION. GO TO BOT TO PURCHASE';
             document.getElementById('subBadge').textContent = noSubText;
