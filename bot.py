@@ -16,6 +16,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
+API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
@@ -258,6 +259,17 @@ def verify_user_token(user_id, token, expiry_timestamp):
     return hmac.compare_digest(expected, token)
 
 def get_user_subscription_folder(user_id):
+    # Проверяем через API (более надёжно)
+    url = f"{API_BASE}/contents/subscriptions/all-sub/user_{user_id}.expiry"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return "all-sub"
+    except:
+        pass
+    
+    # Резервный вариант через raw
     if github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry"):
         return "all-sub"
     return None
@@ -323,21 +335,27 @@ def github_upload_file(filename, content, folder=""):
         full_path = f"{folder}/{filename}"
     else:
         full_path = filename
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
+    url = f"{API_BASE}/contents/{full_path}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+    
+    # Пытаемся получить существующий файл для SHA
     response = requests.get(url, headers=headers)
     data = {"message": f"Update {full_path}", "content": content_b64}
     if response.status_code == 200:
         data["sha"] = response.json()["sha"]
+    elif response.status_code == 404:
+        data["message"] = f"Create {full_path}"
+    
     result = requests.put(url, headers=headers, json=data)
+    print(f"📤 Загрузка {full_path}: {result.status_code}")
     return result.status_code in [200, 201]
 
 def github_get_file_content(filepath):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
+    url = f"{API_BASE}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         response = requests.get(url, headers=headers)
@@ -345,7 +363,8 @@ def github_get_file_content(filepath):
             return None
         content = base64.b64decode(response.json()["content"]).decode('utf-8')
         return content
-    except:
+    except Exception as e:
+        print(f"Ошибка получения файла {filepath}: {e}")
         return None
 
 # ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С ПОЛЬЗОВАТЕЛЯМИ ====================
@@ -387,8 +406,21 @@ def generate_full_config_content(user_id, days):
 
 def create_subscription(user_id, days):
     """Создаёт подписку для пользователя"""
+    print(f"📝 Создание подписки для user_id={user_id}, days={days}")
     filename = f"user_{user_id}"
     folder = "all-sub"
+    
+    # Проверяем существование папки subscriptions/all-sub
+    try:
+        url = f"{API_BASE}/contents/subscriptions/{folder}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 404:
+            print(f"📁 Создаю папку {folder}")
+            # Создаём .gitkeep файл для создания папки
+            github_upload_file(".gitkeep", "", folder=f"subscriptions/{folder}")
+    except Exception as e:
+        print(f"⚠️ Ошибка при проверке папки: {e}")
     
     # Генерируем конфиг
     config_content = generate_full_config_content(user_id, days)
@@ -411,21 +443,26 @@ def create_subscription(user_id, days):
     full_content = header + config_content
     
     # Сохраняем в GitHub
+    print(f"📤 Сохраняем config файл...")
     success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
     if not success:
         print(f"❌ Ошибка загрузки config файла для {user_id}")
         return None
     
+    print(f"📤 Сохраняем expiry файл...")
     success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
     if not success:
         print(f"❌ Ошибка загрузки expiry файла для {user_id}")
         return None
     
+    print(f"📤 Сохраняем type файл...")
     github_upload_file(f"{filename}.type", "all", folder=f"subscriptions/{folder}")
     
     # Генерируем ссылку с токеном
     token = generate_user_token(user_id, expiry_timestamp)
-    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
+    link = f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
+    print(f"✅ Подписка создана: {link}")
+    return link
 
 def get_user_subscription_info(user_id):
     """Получает информацию о подписке пользователя"""
@@ -893,6 +930,8 @@ def handle_balance_payment(call):
     user_id = call.from_user.id
     balance = get_balance(user_id)
     
+    print(f"💰 ОПЛАТА БАЛАНСОМ: user_id={user_id}, days={days}, amount={balance_amount}, balance={balance}")
+    
     if balance < balance_amount:
         bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
         return
@@ -903,9 +942,19 @@ def handle_balance_payment(call):
         bot.answer_callback_query(call.id, "❌ Ошибка при списании средств", show_alert=True)
         return
     
+    print(f"✅ Баланс списан: {new_balance} осталось")
+    
+    # Отправляем сообщение о начале создания
+    bot.edit_message_text(
+        "⏳ **Создаю подписку...**\n\nПожалуйста, подождите несколько секунд.",
+        call.message.chat.id, call.message.message_id,
+        parse_mode='Markdown'
+    )
+    
     # Создаём подписку
     link = create_subscription(user_id, days)
     if link:
+        print(f"✅ Подписка создана, ссылка: {link}")
         bot.edit_message_text(
             f"✅ **Подписка ALL-SUB создана!**\n\n"
             f"💰 {balance_amount} 💵\n"
@@ -913,20 +962,26 @@ def handle_balance_payment(call):
             f"📅 {days} дней\n"
             f"🌍 16 серверов\n\n"
             f"🔗 {link}\n\n"
-            f"📱 Выбирайте сервер в самом приложении!",
+            f"📱 **Как добавить подписку в v2rayNG:**\n"
+            f"• Скопируйте ссылку выше\n"
+            f"• Откройте v2rayNG\n"
+            f"• Нажмите ➕ → «Добавить подписку»\n"
+            f"• Вставьте ссылку → «ОК»\n"
+            f"• Нажмите ▶️ для подключения",
             call.message.chat.id, call.message.message_id,
             parse_mode='Markdown'
         )
         bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📅 {days}д\n📦 ALL-SUB (16 серверов)")
-        bot.answer_callback_query(call.id, "✅ Оплачено!")
+        bot.answer_callback_query(call.id, "✅ Подписка создана!")
         pending_payments.pop(user_id, None)
     else:
         # Если ошибка — возвращаем деньги
+        print(f"❌ ОШИБКА: подписка не создана, возвращаем деньги")
         update_balance(user_id, balance_amount)
         bot.edit_message_text(
             "❌ **Ошибка при создании подписки!**\n\n"
             "Средства возвращены на ваш баланс.\n"
-            "Попробуйте позже или обратитесь в поддержку.",
+            "Попробуйте позже или обратитесь в поддержку @ylvvvl.",
             call.message.chat.id, call.message.message_id,
             parse_mode='Markdown'
         )
