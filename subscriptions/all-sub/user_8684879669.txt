@@ -1,0 +1,762 @@
+#subscription-userinfo: upload=0; download=0; total=0; expire=1780080505
+# profile-title: ALL-SUB 8684879669
+# profile-update-interval: 1440
+# expire: 2026-05-29 18:48:25
+# days: 30
+# servers: 16
+# created: 2026-04-29 18:48:25
+
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "queryStrategy": "UseIPv4",
+    "servers": [
+      "1.1.1.1",
+      "1.0.0.1",
+      "8.8.8.8",
+      "8.8.4.4"
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "routeOnly": true
+      },
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      }
+    },
+    {
+      "tag": "http",
+      "port": 10809,
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "routeOnly": true
+      },
+      "settings": {
+        "allowTransparent": false
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    },
+    {
+      "tag": "eu-01",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "se1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "api-maps.yandex.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/sQY4PvWWhy-j63WD"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-02",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-03",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-04",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-05",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "us.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "smartcaptcha.yandexcloud.net",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/GAdLkgm4EIWmGloo"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-06",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-07",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-08",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de5.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-09",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "fi2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/FBpmkpJEzwiJNY49"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-10",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "fi3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/FBpmkpJEzwiJNY49"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-11",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-12",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-13",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-14",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "cz.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "ya.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/D-hYPVL7F0EXf0lD"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-15",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "lv1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "sun9-37.userapi.com",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/SLBpDI4hSZpKOIdZ"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-16",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "lv2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "sun9-37.userapi.com",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/SLBpDI4hSZpKOIdZ"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "dialer",
+      "protocol": "freedom",
+      "settings": {
+        "fragment": {
+          "packets": "tlshello",
+          "length": "50-100",
+          "interval": "10-20",
+          "maxSplit": "100-200"
+        },
+        "noises": [
+          {
+            "type": "rand",
+            "packet": "10-20",
+            "delay": "10-16",
+            "applyTo": "ipv4"
+          }
+        ]
+      }
+    }
+  ],
+  "routing": {
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch",
+    "balancers": [
+      {
+        "tag": "lb_best",
+        "selector": [
+          "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
+          "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
+        ],
+        "fallbackTag": "eu-01",
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "costs": [
+              {"regexp": false, "match": "eu-01", "value": 1000},
+              {"regexp": false, "match": "eu-05", "value": 1000}
+            ],
+            "baselines": ["300ms", "600ms"],
+            "expected": 2,
+            "maxRTT": "5s"
+          }
+        }
+      }
+    ],
+    "rules": [
+      {"outboundTag": "block", "protocol": ["bittorrent"], "type": "field"},
+      {"outboundTag": "block", "port": "6881-6999", "type": "field"},
+      {"balancerTag": "lb_best", "inboundTag": ["socks", "http"], "network": "tcp,udp", "type": "field"}
+    ]
+  },
+  "burstObservatory": {
+    "pingConfig": {
+      "connectivity": "https://www.gstatic.com/generate_204",
+      "destination": "https://www.gstatic.com/generate_204",
+      "interval": "300s",
+      "sampling": 3,
+      "timeout": "5s"
+    },
+    "subjectSelector": [
+      "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
+      "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
+    ]
+  },
+  "remarks": "🇪🇺 ALL-SUB 8684879669 (30 дней)",
+  "policy": {
+    "levels": {
+      "8": {
+        "handshake": 4,
+        "connIdle": 300,
+        "uplinkOnly": 5,
+        "downlinkOnly": 5
+      }
+    }
+  }
+}
