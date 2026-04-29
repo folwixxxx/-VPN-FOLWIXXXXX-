@@ -16,6 +16,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
+API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
@@ -318,34 +319,40 @@ def run_web_server():
     app.run(host='0.0.0.0', port=10000, debug=False, use_reloader=False)
 
 # ==================== GITHUB ФУНКЦИИ ====================
+def ensure_folder(folder_path):
+    """Создаёт папку в репозитории, если её нет"""
+    url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    data = {"message": f"Create folder {folder_path}", "content": base64.b64encode(b"").decode('utf-8')}
+    resp = requests.put(url, headers=headers, json=data)
+    return resp.status_code in [200, 201, 409]
+
 def github_upload_file(filename, content, folder=""):
     if folder:
         full_path = f"{folder}/{filename}"
     else:
         full_path = filename
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
+    url = f"{API_BASE}/contents/{full_path}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
-    # Пробуем создать файл
-    data = {"message": f"Create {full_path}", "content": content_b64}
+    data = {"message": f"Create/Update {full_path}", "content": content_b64}
     result = requests.put(url, headers=headers, json=data)
     
-    # Если файл уже существует (409 conflict), обновляем с SHA
     if result.status_code == 409:
         get_resp = requests.get(url, headers=headers)
         if get_resp.status_code == 200:
             sha = get_resp.json()["sha"]
-            data = {"message": f"Update {full_path}", "content": content_b64, "sha": sha}
+            data["sha"] = sha
             result = requests.put(url, headers=headers, json=data)
     
     return result.status_code in [200, 201]
 
 def github_get_file_content(filepath):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
+    url = f"{API_BASE}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         response = requests.get(url, headers=headers)
@@ -377,7 +384,6 @@ def save_user(user_id):
     return False
 
 def generate_full_config_content(user_id, days):
-    """Генерирует конфиг со ВСЕМИ серверами"""
     outbounds_list = []
     for server in SERVER_OUTBOUNDS:
         outbound = OUTBOUND_TEMPLATE.format(
@@ -395,19 +401,15 @@ def generate_full_config_content(user_id, days):
     return config
 
 def create_subscription(user_id, days):
-    """Создаёт подписку для пользователя"""
+    ensure_folder("subscriptions/all-sub")
+    
     filename = f"user_{user_id}"
     folder = "all-sub"
     
-    # Генерируем конфиг
     config_content = generate_full_config_content(user_id, days)
+    expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
+    expiry_date_str = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     
-    # Вычисляем дату истечения
-    expiry_date = datetime.now() + timedelta(days=days)
-    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
-    expiry_timestamp = int(expiry_date.timestamp())
-    
-    # Формируем заголовок
     header = f"""#subscription-userinfo: upload=0; download=0; total=0; expire={expiry_timestamp}
 # profile-title: ALL-SUB {user_id}
 # profile-update-interval: 1440
@@ -419,25 +421,17 @@ def create_subscription(user_id, days):
 """
     full_content = header + config_content
     
-    # Сохраняем в GitHub
-    success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
-    if not success:
-        print(f"❌ Ошибка загрузки config файла для {user_id}")
+    success1 = github_upload_file(f"{filename}.txt", full_content, f"subscriptions/{folder}")
+    success2 = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), f"subscriptions/{folder}")
+    github_upload_file(f"{filename}.type", "all", f"subscriptions/{folder}")
+    
+    if not (success1 and success2):
         return None
     
-    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
-    if not success:
-        print(f"❌ Ошибка загрузки expiry файла для {user_id}")
-        return None
-    
-    github_upload_file(f"{filename}.type", "all", folder=f"subscriptions/{folder}")
-    
-    # Генерируем ссылку с токеном
     token = generate_user_token(user_id, expiry_timestamp)
     return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
-    """Получает информацию о подписке пользователя"""
     content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
     if content:
         try:
@@ -458,6 +452,7 @@ def get_user_subscription_info(user_id):
 
 # ==================== ФУНКЦИИ БАЛАНСА ====================
 def get_balance(user_id):
+    ensure_folder("balances")
     content = github_get_file_content(f"balances/balance_{user_id}.json")
     if content is None:
         return 0
@@ -468,7 +463,7 @@ def get_balance(user_id):
         return 0
 
 def update_balance(user_id, amount):
-    filename = f"balance_{user_id}.json"
+    ensure_folder("balances")
     current_balance = get_balance(user_id)
     new_balance = current_balance + amount
     data = {
@@ -476,7 +471,7 @@ def update_balance(user_id, amount):
         "balance": new_balance,
         "last_updated": datetime.now().isoformat()
     }
-    success = github_upload_file(filename, json.dumps(data, indent=2), folder="balances")
+    success = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), folder="balances")
     return success, new_balance
 
 def deduct_balance(user_id, amount):
@@ -484,13 +479,12 @@ def deduct_balance(user_id, amount):
     if current_balance < amount:
         return False, current_balance
     new_balance = current_balance - amount
-    filename = f"balance_{user_id}.json"
     data = {
         "user_id": user_id,
         "balance": new_balance,
         "last_updated": datetime.now().isoformat()
     }
-    success = github_upload_file(filename, json.dumps(data, indent=2), folder="balances")
+    success = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), folder="balances")
     if success:
         return True, new_balance
     return False, current_balance
@@ -870,7 +864,7 @@ def admin_add_balance(message):
         return
     parts = message.text.split()
     if len(parts) != 3:
-        bot.reply_to(message, "❌ Использование: /pay `user_id` `сумма`")
+        bot.reply_to(message, "❌ Использование: /pay `user_id` `сумма`\n\nПример: /pay 123456789 100", parse_mode='Markdown')
         return
     try:
         user_id = int(parts[1])
@@ -880,10 +874,15 @@ def admin_add_balance(message):
             return
         success, new_balance = update_balance(user_id, amount)
         if success:
-            bot.reply_to(message, f"✅ Баланс `{user_id}` пополнен на {amount} 💵\n💰 Текущий баланс: {new_balance} 💵", parse_mode='Markdown')
-            bot.send_message(user_id, f"🎉 **Баланс пополнен!**\n\n💰 Сумма: {amount} 💵\n💰 Баланс: {new_balance} 💵\n\n💡 Используйте /buy для покупки ALL-SUB", parse_mode='Markdown')
-    except:
-        bot.reply_to(message, "❌ Неверный формат")
+            bot.reply_to(message, f"✅ Баланс пользователя `{user_id}` пополнен на {amount} 💵\n💰 Текущий баланс: {new_balance} 💵", parse_mode='Markdown')
+            try:
+                bot.send_message(user_id, f"🎉 **Баланс пополнен!**\n\n💰 Сумма: {amount} 💵\n💰 Баланс: {new_balance} 💵\n\n💡 Используйте /buy для покупки ALL-SUB", parse_mode='Markdown')
+            except:
+                pass
+        else:
+            bot.reply_to(message, "❌ Ошибка при пополнении баланса")
+    except ValueError:
+        bot.reply_to(message, "❌ Неверный формат. Использование: /pay `user_id` `сумма`", parse_mode='Markdown')
 
 @bot.message_handler(commands=['users_count'])
 def users_count(message):
@@ -906,20 +905,13 @@ def handle_balance_payment(call):
         bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
         return
     
-    # Списываем баланс
     success, new_balance = deduct_balance(user_id, balance_amount)
     if not success:
         bot.answer_callback_query(call.id, "❌ Ошибка при списании средств", show_alert=True)
         return
     
-    # Отправляем сообщение о начале создания
-    bot.edit_message_text(
-        "⏳ **Создаю подписку...**\n\nПожалуйста, подождите несколько секунд.",
-        call.message.chat.id, call.message.message_id,
-        parse_mode='Markdown'
-    )
+    bot.edit_message_text("⏳ **Создаю подписку...**\n\nПожалуйста, подождите несколько секунд.", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
     
-    # Создаём подписку
     link = create_subscription(user_id, days)
     if link:
         bot.edit_message_text(
@@ -942,7 +934,6 @@ def handle_balance_payment(call):
         bot.answer_callback_query(call.id, "✅ Подписка создана!")
         pending_payments.pop(user_id, None)
     else:
-        # Если ошибка — возвращаем деньги
         update_balance(user_id, balance_amount)
         bot.edit_message_text(
             "❌ **Ошибка при создании подписки!**\n\n"
