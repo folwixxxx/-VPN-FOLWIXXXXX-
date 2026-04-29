@@ -21,9 +21,11 @@ TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
 # ==================== ЦЕНЫ ДЛЯ ПОДПИСКИ ALL-SUB ====================
-PRICE_TON = 2.0
-PRICE_STARS = 200
-PRICE_BALANCE = 200
+PRICES = {
+    30: {"ton": 2.0, "stars": 200, "balance": 200},
+    60: {"ton": 3.5, "stars": 350, "balance": 350},
+    90: {"ton": 5.0, "stars": 500, "balance": 500}
+}
 
 # ==================== КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ====================
 REQUIRED_CHANNEL = "folwixxxvpn"
@@ -43,8 +45,150 @@ YOUR_USERNAME = "ylvvvl"
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
 LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/locations.jpg"
 
-# Шаблон конфига ALL-SUB (все серверы из твоего JSON)
-ALL_SUB_CONFIG_TEMPLATE = '''{
+# ==================== ВСЕ СЕРВЕРЫ ДЛЯ КОНФИГА ====================
+SERVER_OUTBOUNDS = [
+    {
+        "tag": "🇸🇪 Швеция",
+        "address": "se1.hellahillz.net",
+        "serverName": "api-maps.yandex.ru",
+        "spiderX": "/sQY4PvWWhy-j63WD"
+    },
+    {
+        "tag": "🇳🇱 Нидерланды-1",
+        "address": "nl1.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/I7E9lOYqn_zKCIrH"
+    },
+    {
+        "tag": "🇳🇱 Нидерланды-2",
+        "address": "nl2.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/I7E9lOYqn_zKCIrH"
+    },
+    {
+        "tag": "🇳🇱 Нидерланды-3",
+        "address": "nl3.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/I7E9lOYqn_zKCIrH"
+    },
+    {
+        "tag": "🇺🇸 США",
+        "address": "us.hellahillz.net",
+        "serverName": "smartcaptcha.yandexcloud.net",
+        "spiderX": "/GAdLkgm4EIWmGloo"
+    },
+    {
+        "tag": "🇩🇪 Германия-1",
+        "address": "de1.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/lMeBktGz_X4CrJW4"
+    },
+    {
+        "tag": "🇩🇪 Германия-2",
+        "address": "de3.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/lMeBktGz_X4CrJW4"
+    },
+    {
+        "tag": "🇩🇪 Германия-3",
+        "address": "de5.hellahillz.net",
+        "serverName": "max.ru",
+        "spiderX": "/lMeBktGz_X4CrJW4"
+    },
+    {
+        "tag": "🇫🇮 Финляндия-1",
+        "address": "fi2.hellahillz.net",
+        "serverName": "5post-gate.x5.ru",
+        "spiderX": "/FBpmkpJEzwiJNY49"
+    },
+    {
+        "tag": "🇫🇮 Финляндия-2",
+        "address": "fi3.hellahillz.net",
+        "serverName": "5post-gate.x5.ru",
+        "spiderX": "/FBpmkpJEzwiJNY49"
+    },
+    {
+        "tag": "🇵🇱 Польша-1",
+        "address": "pl1.hellahillz.net",
+        "serverName": "5post-gate.x5.ru",
+        "spiderX": "/-HJtn9M1T1z65cFq"
+    },
+    {
+        "tag": "🇵🇱 Польша-2",
+        "address": "pl2.hellahillz.net",
+        "serverName": "5post-gate.x5.ru",
+        "spiderX": "/-HJtn9M1T1z65cFq"
+    },
+    {
+        "tag": "🇵🇱 Польша-3",
+        "address": "pl3.hellahillz.net",
+        "serverName": "5post-gate.x5.ru",
+        "spiderX": "/-HJtn9M1T1z65cFq"
+    },
+    {
+        "tag": "🇨🇿 Чехия",
+        "address": "cz.hellahillz.net",
+        "serverName": "ya.ru",
+        "spiderX": "/D-hYPVL7F0EXf0lD"
+    },
+    {
+        "tag": "🇱🇻 Латвия-1",
+        "address": "lv1.hellahillz.net",
+        "serverName": "sun9-37.userapi.com",
+        "spiderX": "/SLBpDI4hSZpKOIdZ"
+    },
+    {
+        "tag": "🇱🇻 Латвия-2",
+        "address": "lv2.hellahillz.net",
+        "serverName": "sun9-37.userapi.com",
+        "spiderX": "/SLBpDI4hSZpKOIdZ"
+    }
+]
+
+# Шаблон одного outbound сервера
+OUTBOUND_TEMPLATE = '''
+    {
+      "tag": "{tag}",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{address}",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "{serverName}",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "{spiderX}"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    }'''
+
+# Полный конфиг со всеми серверами
+FULL_CONFIG_TEMPLATE = '''{
   "log": {
     "loglevel": "warning"
   },
@@ -97,630 +241,7 @@ ALL_SUB_CONFIG_TEMPLATE = '''{
       "protocol": "blackhole",
       "tag": "block"
     },
-    {
-      "tag": "eu-01",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "se1.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "api-maps.yandex.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/sQY4PvWWhy-j63WD"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-02",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "nl1.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/I7E9lOYqn_zKCIrH"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-03",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "nl2.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/I7E9lOYqn_zKCIrH"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-04",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "nl3.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/I7E9lOYqn_zKCIrH"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-05",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "us.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "smartcaptcha.yandexcloud.net",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/GAdLkgm4EIWmGloo"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-06",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "de1.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/lMeBktGz_X4CrJW4"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-07",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "de3.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/lMeBktGz_X4CrJW4"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-08",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "de5.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "max.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/lMeBktGz_X4CrJW4"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-09",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "fi2.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "5post-gate.x5.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/FBpmkpJEzwiJNY49"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-10",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "fi3.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "5post-gate.x5.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/FBpmkpJEzwiJNY49"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-11",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "pl1.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "5post-gate.x5.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/-HJtn9M1T1z65cFq"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-12",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "pl2.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "5post-gate.x5.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/-HJtn9M1T1z65cFq"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-13",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "pl3.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "5post-gate.x5.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/-HJtn9M1T1z65cFq"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-14",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "cz.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "ya.ru",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/D-hYPVL7F0EXf0lD"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-15",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "lv1.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "sun9-37.userapi.com",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/SLBpDI4hSZpKOIdZ"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
-    {
-      "tag": "eu-16",
-      "protocol": "vless",
-      "settings": {
-        "vnext": [
-          {
-            "address": "lv2.hellahillz.net",
-            "port": 443,
-            "users": [
-              {
-                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
-                "security": "auto",
-                "encryption": "none",
-                "email": "user@hellahillz.net",
-                "alterId": 0,
-                "flow": "xtls-rprx-vision",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "tcp",
-        "security": "reality",
-        "realitySettings": {
-          "serverName": "sun9-37.userapi.com",
-          "fingerprint": "randomized",
-          "show": false,
-          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
-          "shortId": "ad921688161df51c",
-          "spiderX": "/SLBpDI4hSZpKOIdZ"
-        },
-        "sockopt": {
-          "domainStrategy": "UseIP",
-          "tcpMaxSeg": 1440
-        }
-      }
-    },
+    {outbounds_list},
     {
       "tag": "dialer",
       "protocol": "freedom",
@@ -745,48 +266,15 @@ ALL_SUB_CONFIG_TEMPLATE = '''{
   "routing": {
     "domainMatcher": "hybrid",
     "domainStrategy": "IPIfNonMatch",
-    "balancers": [
-      {
-        "tag": "lb_best",
-        "selector": [
-          "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
-          "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
-        ],
-        "fallbackTag": "eu-01",
-        "strategy": {
-          "type": "leastLoad",
-          "settings": {
-            "costs": [
-              {"regexp": false, "match": "eu-01", "value": 1000},
-              {"regexp": false, "match": "eu-05", "value": 1000}
-            ],
-            "baselines": ["300ms", "600ms"],
-            "expected": 2,
-            "maxRTT": "5s"
-          }
-        }
-      }
-    ],
     "rules": [
       {"outboundTag": "block", "protocol": ["bittorrent"], "type": "field"},
       {"outboundTag": "block", "port": "6881-6999", "type": "field"},
-      {"balancerTag": "lb_best", "inboundTag": ["socks", "http"], "network": "tcp,udp", "type": "field"}
+      {"outboundTag": "block", "domain": ["geosite:category-ads-all"], "type": "field"},
+      {"outboundTag": "direct", "domain": ["geosite:private", "geosite:ru"], "type": "field"},
+      {"outboundTag": "dialer", "inboundTag": ["socks", "http"], "network": "tcp,udp", "type": "field"}
     ]
   },
-  "burstObservatory": {
-    "pingConfig": {
-      "connectivity": "https://www.gstatic.com/generate_204",
-      "destination": "https://www.gstatic.com/generate_204",
-      "interval": "300s",
-      "sampling": 3,
-      "timeout": "5s"
-    },
-    "subjectSelector": [
-      "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
-      "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
-    ]
-  },
-  "remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов",
+  "remarks": "{remarks}",
   "policy": {
     "levels": {
       "8": {
@@ -959,22 +447,41 @@ def save_user(user_id):
         return True
     return False
 
-def force_update_user_config(user_id):
-    """Обновляет конфиг пользователя из шаблона"""
-    template_content = ALL_SUB_CONFIG_TEMPLATE
-    folder = "all-sub"
+def generate_full_config(user_id, days):
+    """Генерирует конфиг со ВСЕМИ серверами"""
+    outbounds_list = []
+    for server in SERVER_OUTBOUNDS:
+        outbound = OUTBOUND_TEMPLATE.format(
+            tag=server["tag"],
+            address=server["address"],
+            serverName=server["serverName"],
+            spiderX=server["spiderX"]
+        )
+        outbounds_list.append(outbound)
     
-    template_content = template_content.replace(
-        '"remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов"',
-        f'"remarks": "🇪🇺 ALL-SUB {user_id}"'
+    config = FULL_CONFIG_TEMPLATE.format(
+        outbounds_list=",".join(outbounds_list),
+        remarks=f"🇪🇺 ALL-SUB {user_id} ({days} дней, 16 серверов)"
     )
-    template_content += f"\n// Обновлено: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    return config
+
+def generate_trial_config(user_id):
+    """Генерирует конфиг для пробного периода со ВСЕМИ серверами"""
+    outbounds_list = []
+    for server in SERVER_OUTBOUNDS:
+        outbound = OUTBOUND_TEMPLATE.format(
+            tag=server["tag"],
+            address=server["address"],
+            serverName=server["serverName"],
+            spiderX=server["spiderX"]
+        )
+        outbounds_list.append(outbound)
     
-    success = github_upload_file(f"user_{user_id}.txt", template_content, folder=f"subscriptions/{folder}")
-    if not success:
-        return False
-    github_upload_file(f"user_{user_id}.type", "all", folder=f"subscriptions/{folder}")
-    return True
+    config = FULL_CONFIG_TEMPLATE.format(
+        outbounds_list=",".join(outbounds_list),
+        remarks=f"🎁 TRIAL ALL-SUB {user_id} (1 день, 16 серверов)"
+    )
+    return config
 
 # ==================== ФУНКЦИИ БАЛАНСА ====================
 def get_balance(user_id):
@@ -1043,8 +550,17 @@ def monitor_payment(user_id, amount_ton, days):
             bot.send_message(user_id, f"✅ Оплата {amount_ton} TON получена! Создаю подписку...")
             link = create_subscription(user_id, days)
             if link:
-                bot.send_message(user_id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 Действует: {days} дней\n\n🌍 16 серверов с автовыбором\n📱 Добавьте ссылку в v2rayNG")
-                bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 Тип: ALL-SUB")
+                bot.send_message(user_id, 
+                    f"✅ **Подписка ALL-SUB создана!**\n\n"
+                    f"🔗 {link}\n\n"
+                    f"📅 Действует: {days} дней\n\n"
+                    f"🌍 **16 серверов в одном конфиге!**\n"
+                    f"📱 В приложении v2rayNG вы можете сами выбирать сервер\n\n"
+                    f"💡 **Как выбрать сервер в v2rayNG:**\n"
+                    f"• Нажмите на иконку профиля вверху\n"
+                    f"• Выберите нужный сервер из списка\n"
+                    f"• Нажмите ▶️ для подключения")
+                bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 ALL-SUB (16 серверов)")
             else:
                 bot.send_message(user_id, "❌ Ошибка при создании подписки")
             return True
@@ -1062,7 +578,7 @@ def send_stars_invoice(user_id, days, stars_amount):
         bot.send_invoice(
             chat_id=user_id,
             title=title,
-            description=f"Подписка ALL-SUB на {days} дней\n\n✅ 16 серверов\n✅ Автовыбор лучшего\n✅ Безлимитный трафик\n✅ Обход блокировок",
+            description=f"Подписка ALL-SUB на {days} дней\n\n✅ 16 серверов\n✅ Выбор сервера в приложении\n✅ Безлимитный трафик\n✅ Обход блокировок",
             invoice_payload=f"stars_{days}_{stars_amount}",
             provider_token="",
             currency="XTR",
@@ -1104,23 +620,25 @@ def handle_successful_payment(message):
                 f"✅ **Подписка ALL-SUB создана!**\n\n"
                 f"⭐ Оплачено: {stars_amount} Stars\n"
                 f"📅 Период: {days} дней\n"
-                f"🌍 16 серверов с автовыбором\n\n"
+                f"🌍 **16 серверов в одном конфиге!**\n\n"
                 f"🔗 {link}\n\n"
-                f"📱 Добавьте ссылку в v2rayNG"
+                f"📱 **Как выбрать сервер в v2rayNG:**\n"
+                f"1. Добавьте ссылку в приложение\n"
+                f"2. Нажмите на иконку профиля вверху\n"
+                f"3. Выберите нужный сервер из списка\n"
+                f"4. Нажмите ▶️ для подключения"
             )
-            bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д\n📦 ALL-SUB")
+            bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д\n📦 ALL-SUB (16 серверов)")
 
 # ==================== ФУНКЦИИ ПОДПИСОК ====================
-def create_subscription(user_id, days=30):
+def create_subscription(user_id, days=30, is_trial=False):
     filename = f"user_{user_id}"
     folder = "all-sub"
     
-    # Создаём конфиг из шаблона
-    config_content = ALL_SUB_CONFIG_TEMPLATE
-    config_content = config_content.replace(
-        '"remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов"',
-        f'"remarks": "🇪🇺 ALL-SUB {user_id} ({days} дней)"'
-    )
+    if is_trial:
+        config_content = generate_trial_config(user_id)
+    else:
+        config_content = generate_full_config(user_id, days)
     
     expiry_date = datetime.now() + timedelta(days=days)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
@@ -1241,12 +759,14 @@ def start_command(message):
         "✅ Быстрые серверы\n"
         "✅ Обход ограничений\n"
         "✅ Безлимитный трафик\n\n"
-        "**📦 ЕДИНЫЙ ТАРИФ ALL-SUB**\n"
+        "**📦 ALL-SUB — ЕДИНЫЙ ТАРИФ**\n"
         "🌍 **16 серверов** (Нидерланды, Германия, Финляндия, Польша, Латвия, Чехия, США)\n"
-        "⚡ **Автоматический выбор лучшего сервера**\n"
+        "⚡ **Выбирайте сервер в самом приложении v2rayNG**\n"
         "🔒 **Блокировка рекламы и трекеров**\n\n"
-        "💰 **Цена:** 2 TON / 200⭐ / 200💵 (30 дней)\n\n"
-        "🎁 Пробный период 3 дня — бесплатно!\n\n"
+        "💰 **Цена:** 2 TON / 200⭐ / 200💵 (30 дней)\n"
+        "💰 **60 дней:** 3.5 TON / 350⭐ / 350💵\n"
+        "💰 **90 дней:** 5 TON / 500⭐ / 500💵\n\n"
+        "🎁 Пробный период 1 день — бесплатно!\n\n"
         "Выберите действие 👇"
     )
     try:
@@ -1272,13 +792,17 @@ def profile_command(message):
         text += "📅 Статус: ❌ **Нет активной подписки**\n\n💡 Используйте /buy для покупки ALL-SUB"
     else:
         text += f"📦 **ТАРИФ: ALL-SUB**\n"
-        text += f"🌍 16 серверов с автовыбором\n"
+        text += f"🌍 16 серверов (выбор в приложении)\n"
         text += f"📅 Статус: ✅ **Активна**\n"
         text += f"📅 Осталось дней: {days_left}\n"
         text += f"📅 Действует до: `{expiry_date}`\n"
         text += f"🔗 Ссылка для v2rayNG:\n`{subscription_link}`\n\n"
-        text += f"🔄 Конфиг обновляется автоматически\n"
-        text += f"⚠️ Если не работает - удалите старую и добавьте эту ссылку заново"
+        text += f"📱 **Как выбрать сервер:**\n"
+        text += f"• Добавьте ссылку в v2rayNG\n"
+        text += f"• Нажмите на иконку профиля вверху\n"
+        text += f"• Выберите нужный сервер\n"
+        text += f"• Нажмите ▶️ для подключения\n\n"
+        text += f"🔄 Конфиг обновляется автоматически"
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['buy'])
@@ -1295,15 +819,11 @@ def buy_command(message):
     bot.send_message(
         message.chat.id,
         "💎 **ALL-SUB — ЕДИНЫЙ ТАРИФ**\n\n"
-        "🌍 **16 серверов:**\n"
-        "🇳🇱 Нидерланды (3 сервера)\n"
-        "🇩🇪 Германия (3 сервера)\n"
-        "🇫🇮 Финляндия (2 сервера)\n"
-        "🇵🇱 Польша (3 сервера)\n"
-        "🇱🇻 Латвия (2 сервера)\n"
-        "🇨🇿 Чехия (1 сервер)\n"
-        "🇺🇸 США (1 сервер)\n\n"
-        "⚡ **Автовыбор лучшего сервера**\n"
+        "🌍 **16 серверов в одном конфиге:**\n"
+        "🇳🇱 Нидерланды (3 сервера) • 🇩🇪 Германия (3 сервера)\n"
+        "🇫🇮 Финляндия (2 сервера) • 🇵🇱 Польша (3 сервера)\n"
+        "🇱🇻 Латвия (2 сервера) • 🇨🇿 Чехия (1 сервер) • 🇺🇸 США (1 сервер)\n\n"
+        "⚡ **Вы выбираете сервер в самом приложении v2rayNG!**\n"
         "🔒 **Встроенная блокировка рекламы и трекеров**\n\n"
         "💰 **Цены:**\n"
         "• 30 дней — 2 TON / 200⭐ / 200💵\n"
@@ -1340,7 +860,7 @@ def process_payment(call, days, ton, stars, bal):
     bot.edit_message_text(
         f"💳 **Способ оплаты ALL-SUB**\n\n"
         f"📅 {days} дней\n"
-        f"🌍 16 серверов с автовыбором\n\n"
+        f"🌍 16 серверов (выбор в приложении)\n\n"
         f"💎 TON: {ton}\n"
         f"⭐ Stars: {stars}\n"
         f"💰 Баланс: {bal} 💵",
@@ -1361,18 +881,22 @@ def trial_command(message):
         bot.reply_to(message, "❌ У вас уже есть активная подписка!")
         return
     
-    link = create_subscription(user_id, 3)
+    link = create_subscription(user_id, 1, is_trial=True)
     if link:
         github_upload_file(f"trial_{user_id}", "used", folder="trials")
         bot.send_message(
             user_id,
             f"🎁 **Пробный период ALL-SUB активирован!**\n\n"
-            f"🌍 16 серверов с автовыбором\n"
-            f"📅 Действует: 3 дня\n\n"
+            f"🌍 16 серверов\n"
+            f"📅 Действует: 1 день\n\n"
             f"🔗 **Ваша ссылка:**\n{link}\n\n"
-            f"📱 Добавьте ссылку в v2rayNG"
+            f"📱 **Как выбрать сервер в v2rayNG:**\n"
+            f"1. Добавьте ссылку в приложение\n"
+            f"2. Нажмите на иконку профиля вверху\n"
+            f"3. Выберите нужный сервер из списка\n"
+            f"4. Нажмите ▶️ для подключения"
         )
-        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД ALL-SUB**\n👤 {user_id}")
+        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД ALL-SUB**\n👤 {user_id}\n📅 1 день (16 серверов)")
     else:
         bot.reply_to(message, "❌ Ошибка при активации пробного периода")
 
@@ -1401,14 +925,15 @@ def refresh_config_command(message):
     if days_left is None:
         bot.reply_to(message, "❌ У вас нет активной подписки!")
         return
-    success = force_update_user_config(user_id)
+    
+    success = create_subscription(user_id, days_left, is_trial=False)
     if success:
         _, _, new_link = get_user_subscription_info(user_id)
         bot.reply_to(
             message,
             f"✅ **Ваш конфиг ALL-SUB обновлен!**\n\n"
             f"📱 Обновите ссылку в приложении:\n{new_link}\n\n"
-            f"🌍 Все 16 серверов добавлены автоматически!",
+            f"🌍 Все 16 серверов обновлены!",
             parse_mode='Markdown'
         )
     else:
@@ -1465,14 +990,18 @@ def handle_balance_payment(call):
     
     link = create_subscription(user_id, days)
     if link:
-        bot.send_message(call.message.chat.id, 
-            f"✅ **Подписка ALL-SUB создана!**\n"
+        bot.edit_message_text(
+            f"✅ **Подписка ALL-SUB создана!**\n\n"
             f"💰 {balance_amount} 💵\n"
             f"💰 Остаток: {new_balance} 💵\n"
             f"📅 {days} дней\n"
             f"🌍 16 серверов\n\n"
-            f"🔗 {link}")
-        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📅 {days}д\n📦 ALL-SUB")
+            f"🔗 {link}\n\n"
+            f"📱 Выбирайте сервер в самом приложении!",
+            call.message.chat.id, call.message.message_id,
+            parse_mode='Markdown'
+        )
+        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📅 {days}д\n📦 ALL-SUB (16 серверов)")
         bot.answer_callback_query(call.id, "✅ Оплачено!")
     else:
         update_balance(user_id, balance_amount)
@@ -1489,14 +1018,17 @@ def handle_ton_payment(call):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data=f"check_{days}_{amount_ton}"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
-    bot.send_message(call.message.chat.id, 
+    bot.edit_message_text(
         f"💳 **Оплата TON для ALL-SUB**\n\n"
         f"💰 {amount_ton} TON\n"
         f"📅 {days} дней\n"
         f"🌍 16 серверов\n\n"
         f"**Кошелёк:**\n`{TON_WALLET}`\n\n"
-        f"Переведите и нажмите «✅ Я перевел»\n⏰ 10 минут",
-        reply_markup=keyboard, parse_mode='Markdown')
+        f"Переведите точную сумму и нажмите «✅ Я перевел»\n"
+        f"⏰ Время ожидания: 10 минут",
+        call.message.chat.id, call.message.message_id,
+        reply_markup=keyboard, parse_mode='Markdown'
+    )
     bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ TON\n👤 {user_id}\n💰 {amount_ton} TON\n📦 ALL-SUB")
     bot.answer_callback_query(call.id)
 
@@ -1514,14 +1046,14 @@ def handle_check_payment(call):
     parts = call.data.split('_')
     days = int(parts[1])
     amount_ton = float(parts[2])
-    bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
+    bot.edit_message_text("⏳ Проверяем оплату...\n\nПожалуйста, подождите, это может занять до 10 минут.", call.message.chat.id, call.message.message_id)
     Thread(target=monitor_payment, args=(call.from_user.id, amount_ton, days)).start()
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cancel')
 def cancel_payment(call):
     pending_payments.pop(call.from_user.id, None)
-    bot.send_message(call.message.chat.id, "❌ Оплата отменена")
+    bot.edit_message_text("❌ Оплата отменена", call.message.chat.id, call.message.message_id)
     bot.answer_callback_query(call.id)
 
 # ==================== ОСТАЛЬНЫЕ CALLBACKИ ====================
@@ -1589,8 +1121,9 @@ if __name__ == "__main__":
     web_thread.start()
     print("🌐 Веб-сервер запущен на порту 10000")
     print("🤖 Бот запущен. Репозиторий должен быть ПУБЛИЧНЫМ!")
-    print("📦 ЕДИНЫЙ ТАРИФ ALL-SUB — 16 серверов, цена 2 TON / 200⭐ / 200💵")
-    print("🎁 Пробный период 3 дня")
+    print("📦 ALL-SUB — 16 серверов в одном конфиге, выбор в приложении")
+    print("💰 Цена: 2 TON / 200⭐ / 200💵 (30 дней)")
+    print("🎁 Пробный период 1 день")
     while True:
         try:
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
