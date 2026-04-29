@@ -20,10 +20,10 @@ TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
-# ==================== ЦЕНЫ ДЛЯ КАСТОМНОЙ ПОДПИСКИ ====================
-CUSTOM_PRICE_TON = 0.5
-CUSTOM_PRICE_STARS = 50
-CUSTOM_PRICE_BALANCE = 50
+# ==================== ЦЕНЫ ДЛЯ ПОДПИСКИ ALL-SUB ====================
+PRICE_TON = 2.0
+PRICE_STARS = 200
+PRICE_BALANCE = 200
 
 # ==================== КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ====================
 REQUIRED_CHANNEL = "folwixxxvpn"
@@ -36,13 +36,768 @@ if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY])
 # ==================== ИНИЦИАЛИЗАЦИЯ ====================
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 pending_payments = {}
-user_vless_links = {}
 
 YOUR_ADMIN_ID = 8684879669
 YOUR_USERNAME = "ylvvvl"
 
 BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
 LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/locations.jpg"
+
+# Шаблон конфига ALL-SUB (все серверы из твоего JSON)
+ALL_SUB_CONFIG_TEMPLATE = '''{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "queryStrategy": "UseIPv4",
+    "servers": [
+      "1.1.1.1",
+      "1.0.0.1",
+      "8.8.8.8",
+      "8.8.4.4"
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "routeOnly": true
+      },
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      }
+    },
+    {
+      "tag": "http",
+      "port": 10809,
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "routeOnly": true
+      },
+      "settings": {
+        "allowTransparent": false
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    },
+    {
+      "tag": "eu-01",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "se1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "api-maps.yandex.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/sQY4PvWWhy-j63WD"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-02",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-03",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-04",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "nl3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/I7E9lOYqn_zKCIrH"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-05",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "us.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "smartcaptcha.yandexcloud.net",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/GAdLkgm4EIWmGloo"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-06",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-07",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-08",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "de5.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "max.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/lMeBktGz_X4CrJW4"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-09",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "fi2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/FBpmkpJEzwiJNY49"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-10",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "fi3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/FBpmkpJEzwiJNY49"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-11",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-12",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-13",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "pl3.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "5post-gate.x5.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/-HJtn9M1T1z65cFq"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-14",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "cz.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "ya.ru",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/D-hYPVL7F0EXf0lD"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-15",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "lv1.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "sun9-37.userapi.com",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/SLBpDI4hSZpKOIdZ"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "eu-16",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "lv2.hellahillz.net",
+            "port": 443,
+            "users": [
+              {
+                "id": "f14b71e0-38cf-487c-ab14-47a227d8519d",
+                "security": "auto",
+                "encryption": "none",
+                "email": "user@hellahillz.net",
+                "alterId": 0,
+                "flow": "xtls-rprx-vision",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "sun9-37.userapi.com",
+          "fingerprint": "randomized",
+          "show": false,
+          "publicKey": "XvCnLU7hoBeYN9KloeaEvgSVnCCbrnMc3cl3NSHaeSo",
+          "shortId": "ad921688161df51c",
+          "spiderX": "/SLBpDI4hSZpKOIdZ"
+        },
+        "sockopt": {
+          "domainStrategy": "UseIP",
+          "tcpMaxSeg": 1440
+        }
+      }
+    },
+    {
+      "tag": "dialer",
+      "protocol": "freedom",
+      "settings": {
+        "fragment": {
+          "packets": "tlshello",
+          "length": "50-100",
+          "interval": "10-20",
+          "maxSplit": "100-200"
+        },
+        "noises": [
+          {
+            "type": "rand",
+            "packet": "10-20",
+            "delay": "10-16",
+            "applyTo": "ipv4"
+          }
+        ]
+      }
+    }
+  ],
+  "routing": {
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch",
+    "balancers": [
+      {
+        "tag": "lb_best",
+        "selector": [
+          "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
+          "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
+        ],
+        "fallbackTag": "eu-01",
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "costs": [
+              {"regexp": false, "match": "eu-01", "value": 1000},
+              {"regexp": false, "match": "eu-05", "value": 1000}
+            ],
+            "baselines": ["300ms", "600ms"],
+            "expected": 2,
+            "maxRTT": "5s"
+          }
+        }
+      }
+    ],
+    "rules": [
+      {"outboundTag": "block", "protocol": ["bittorrent"], "type": "field"},
+      {"outboundTag": "block", "port": "6881-6999", "type": "field"},
+      {"balancerTag": "lb_best", "inboundTag": ["socks", "http"], "network": "tcp,udp", "type": "field"}
+    ]
+  },
+  "burstObservatory": {
+    "pingConfig": {
+      "connectivity": "https://www.gstatic.com/generate_204",
+      "destination": "https://www.gstatic.com/generate_204",
+      "interval": "300s",
+      "sampling": 3,
+      "timeout": "5s"
+    },
+    "subjectSelector": [
+      "eu-01", "eu-02", "eu-03", "eu-04", "eu-05", "eu-06", "eu-07", "eu-08",
+      "eu-09", "eu-10", "eu-11", "eu-12", "eu-13", "eu-14", "eu-15", "eu-16"
+    ]
+  },
+  "remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов",
+  "policy": {
+    "levels": {
+      "8": {
+        "handshake": 4,
+        "connIdle": 300,
+        "uplinkOnly": 5,
+        "downlinkOnly": 5
+      }
+    }
+  }
+}'''
 
 # ==================== ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ НА КАНАЛ ====================
 def is_subscribed(user_id):
@@ -95,9 +850,8 @@ def verify_user_token(user_id, token, expiry_timestamp):
     return hmac.compare_digest(expected, token)
 
 def get_user_subscription_folder(user_id):
-    for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub", "custom-sub"]:
-        if github_get_file_content(f"subscriptions/{folder}/user_{user_id}.expiry"):
-            return folder
+    if github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry"):
+        return "all-sub"
     return None
 
 # ==================== НАСТРОЙКА КНОПКИ ГЛАВНОГО МЕНЮ ====================
@@ -205,45 +959,21 @@ def save_user(user_id):
         return True
     return False
 
-def get_subscription_folder_by_type(sub_type):
-    folder_map = {
-        "def": "def-sub",
-        "ultra": "ultra-sub",
-        "full": "full-sub",
-        "fast": "fast-sub",
-        "trial": "trial-sub",
-        "custom": "custom-sub"
-    }
-    return folder_map.get(sub_type, "full-sub")
-
-def get_user_subscription_type(user_id):
-    for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub", "custom-sub"]:
-        content = github_get_file_content(f"subscriptions/{folder}/user_{user_id}.type")
-        if content:
-            return content.strip()
-    return None
-
-def force_update_user_config(user_id, sub_type):
-    if sub_type == "custom":
-        return True
-    template_file = f"{sub_type}-sub.txt"
-    if sub_type == "full":
-        template_file = "template.txt"
-    url = f"{RAW_BASE}/{template_file}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        return False
-    template_content = response.text
-    folder = get_subscription_folder_by_type(sub_type)
+def force_update_user_config(user_id):
+    """Обновляет конфиг пользователя из шаблона"""
+    template_content = ALL_SUB_CONFIG_TEMPLATE
+    folder = "all-sub"
+    
     template_content = template_content.replace(
-        "❀VPN USER❀",
-        f"❀{sub_type.upper()}-SUB {user_id}❀"
+        '"remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов"',
+        f'"remarks": "🇪🇺 ALL-SUB {user_id}"'
     )
-    template_content += f"\n# Обновлено вручную: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    template_content += f"\n// Обновлено: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    
     success = github_upload_file(f"user_{user_id}.txt", template_content, folder=f"subscriptions/{folder}")
     if not success:
         return False
-    github_upload_file(f"user_{user_id}.type", sub_type, folder=f"subscriptions/{folder}")
+    github_upload_file(f"user_{user_id}.type", "all", folder=f"subscriptions/{folder}")
     return True
 
 # ==================== ФУНКЦИИ БАЛАНСА ====================
@@ -306,15 +1036,15 @@ def check_ton_transaction(amount_ton, user_id):
         return False
     return False
 
-def monitor_payment(user_id, amount_ton, days, sub_type):
+def monitor_payment(user_id, amount_ton, days):
     start_time = time.time()
     while time.time() - start_time < 600:
         if check_ton_transaction(amount_ton, user_id):
             bot.send_message(user_id, f"✅ Оплата {amount_ton} TON получена! Создаю подписку...")
-            link = create_user_subscription(user_id, days, sub_type, is_trial=False)
+            link = create_subscription(user_id, days)
             if link:
-                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 Действует: {days} дней\n\n📱 Добавьте ссылку в v2rayNG")
-                bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 Тип: {sub_type}")
+                bot.send_message(user_id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 Действует: {days} дней\n\n🌍 16 серверов с автовыбором\n📱 Добавьте ссылку в v2rayNG")
+                bot.send_message(YOUR_ADMIN_ID, f"✅ **УСПЕШНАЯ ОПЛАТА!**\n\n👤 Пользователь: `{user_id}`\n💰 Сумма: {amount_ton} TON\n📅 Период: {days} дней\n📦 Тип: ALL-SUB")
             else:
                 bot.send_message(user_id, "❌ Ошибка при создании подписки")
             return True
@@ -322,44 +1052,18 @@ def monitor_payment(user_id, amount_ton, days, sub_type):
     bot.send_message(user_id, "⏰ Время ожидания оплаты истекло. Попробуйте снова /start")
     return False
 
-def monitor_custom_payment(chat_id, user_id):
-    start_time = time.time()
-    while time.time() - start_time < 600:
-        if check_ton_transaction(CUSTOM_PRICE_TON, user_id):
-            links = user_vless_links.get(user_id, [])
-            link = create_custom_subscription(user_id, links)
-            if link:
-                bot.send_message(chat_id, f"✅ **Кастомный конфиг создан!**\n📊 {len(links)} серверов\n\n🔗 {link}")
-                bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (TON)\n👤 {user_id}")
-                user_vless_links.pop(user_id, None)
-                pending_payments.pop(user_id, None)
-            else:
-                bot.send_message(chat_id, "❌ Ошибка")
-            return
-        time.sleep(15)
-    bot.send_message(chat_id, "⏰ Время ожидания оплаты истекло")
-    user_vless_links.pop(user_id, None)
-    pending_payments.pop(user_id, None)
-
 # ==================== ОПЛАТА STARS ====================
-def send_stars_invoice(user_id, days, stars_amount, sub_type):
-    if sub_type == "def":
-        title = f"💵 DEF-SUB {days}д"
-    elif sub_type == "ultra":
-        title = f"⭐ ULTRA-SUB {days}д"
-    elif sub_type == "full":
-        title = f"🔑 FULL-SUB {days}д"
-    else:
-        title = f"🛡️ FAST-SUB {days}д"
-    prices = [LabeledPrice(label="VPN подписка", amount=stars_amount)]
+def send_stars_invoice(user_id, days, stars_amount):
+    title = f"⭐ ALL-SUB {days}д"
+    prices = [LabeledPrice(label="VPN подписка ALL-SUB (16 серверов)", amount=stars_amount)]
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton(f"⭐ Оплатить {stars_amount} Stars", pay=True))
     try:
         bot.send_invoice(
             chat_id=user_id,
             title=title,
-            description=f"VPN подписка на {days} дней\n\n✅ Безлимитный трафик\n✅ Обход блокировок",
-            invoice_payload=f"stars_{days}_{stars_amount}_{sub_type}",
+            description=f"Подписка ALL-SUB на {days} дней\n\n✅ 16 серверов\n✅ Автовыбор лучшего\n✅ Безлимитный трафик\n✅ Обход блокировок",
+            invoice_payload=f"stars_{days}_{stars_amount}",
             provider_token="",
             currency="XTR",
             prices=prices,
@@ -382,13 +1086,6 @@ def handle_pre_checkout(query):
     except Exception as e:
         print(f"❌ Pre-checkout error: {e}")
 
-@bot.pre_checkout_query_handler(func=lambda query: query.invoice_payload == "custom_config")
-def handle_custom_pre_checkout(query):
-    try:
-        bot.answer_pre_checkout_query(query.id, ok=True)
-    except Exception as e:
-        print(f"❌ Pre-checkout error: {e}")
-
 @bot.message_handler(content_types=['successful_payment'])
 def handle_successful_payment(message):
     payment = message.successful_payment
@@ -396,388 +1093,76 @@ def handle_successful_payment(message):
     payload = payment.invoice_payload
     print(f"⭐ УСПЕШНАЯ ОПЛАТА! payload={payload}")
     
-    if payload == "custom_config":
-        links = user_vless_links.get(user_id, [])
-        link = create_custom_subscription(user_id, links)
-        if link:
-            bot.send_message(user_id, f"✅ **Кастомный конфиг создан!**\n⭐ {CUSTOM_PRICE_STARS} Stars\n📊 {len(links)} серверов\n\n🔗 {link}")
-            bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (STARS)\n👤 {user_id}")
-            user_vless_links.pop(user_id, None)
-            pending_payments.pop(user_id, None)
-        else:
-            bot.send_message(user_id, "❌ Ошибка")
-        return
-    
     parts = payload.split('_')
-    if len(parts) >= 4 and parts[0] == "stars":
+    if len(parts) >= 3 and parts[0] == "stars":
         days = int(parts[1])
         stars_amount = int(parts[2])
-        sub_type = parts[3]
-        link = create_user_subscription(user_id, days, sub_type, is_trial=False)
+        link = create_subscription(user_id, days)
         if link:
             bot.send_message(
                 user_id,
-                f"✅ **Подписка создана!**\n\n"
+                f"✅ **Подписка ALL-SUB создана!**\n\n"
                 f"⭐ Оплачено: {stars_amount} Stars\n"
-                f"📅 Период: {days} дней\n\n"
+                f"📅 Период: {days} дней\n"
+                f"🌍 16 серверов с автовыбором\n\n"
                 f"🔗 {link}\n\n"
                 f"📱 Добавьте ссылку в v2rayNG"
             )
-            bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д")
+            bot.send_message(YOUR_ADMIN_ID, f"⭐ **ОПЛАТА STARS!**\n👤 {user_id}\n⭐ {stars_amount}\n📅 {days}д\n📦 ALL-SUB")
 
 # ==================== ФУНКЦИИ ПОДПИСОК ====================
-def create_custom_subscription(user_id, vless_links):
+def create_subscription(user_id, days=30):
     filename = f"user_{user_id}"
-    folder = "custom-sub"
+    folder = "all-sub"
     
-    header = f"""# profile-title: ⚙️ CUSTOM CONFIG {user_id}
-# profile-update-interval: 1440
-# created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-# type: custom
-
-"""
-    content = header + "\n".join(vless_links)
-    expiry_timestamp = 2147483647
+    # Создаём конфиг из шаблона
+    config_content = ALL_SUB_CONFIG_TEMPLATE
+    config_content = config_content.replace(
+        '"remarks": "🇪🇺 ALL-SUB ⚡ 16 серверов"',
+        f'"remarks": "🇪🇺 ALL-SUB {user_id} ({days} дней)"'
+    )
     
-    success = github_upload_file(f"{filename}.txt", content, folder=f"subscriptions/{folder}")
-    if not success:
-        return None
-    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
-    if not success:
-        return None
-    github_upload_file(f"{filename}.type", "custom", folder=f"subscriptions/{folder}")
-    
-    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
-
-def create_user_subscription(user_id, days=30, sub_type="full", is_trial=False):
-    filename = f"user_{user_id}"
-    
-    if is_trial:
-        template_file = "trial-sub.txt"
-        sub_name = "TRIAL (🎁 Пробный период)"
-        folder = "trial-sub"
-    else:
-        if sub_type == "def":
-            template_file = "def-sub.txt"
-            sub_name = "DEF-SUB (VPN💵)"
-            folder = "def-sub"
-        elif sub_type == "ultra":
-            template_file = "ultra-sub.txt"
-            sub_name = "ULTRA-SUB (⭐ Лучшие серверы)"
-            folder = "ultra-sub"
-        elif sub_type == "full":
-            template_file = "template.txt"
-            sub_name = "FULL-SUB (🔑Обход БС и VPN💵)"
-            folder = "full-sub"
-        elif sub_type == "fast":
-            template_file = "fast-sub.txt"
-            sub_name = "FAST-SUB (🛡️ Максимальная скорость)"
-            folder = "fast-sub"
-        elif sub_type == "custom":
-            return create_custom_subscription(user_id, user_vless_links.get(user_id, []))
-        else:
-            template_file = "template.txt"
-            sub_name = "FULL-SUB (🔑Обход БС и VPN💵)"
-            folder = "full-sub"
-    
-    url = f"{RAW_BASE}/{template_file}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        bot.send_message(user_id, f"❌ Ошибка: не найден шаблон {template_file}")
-        return None
-    
-    template_content = response.text
     expiry_date = datetime.now() + timedelta(days=days)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
     expiry_timestamp = int(expiry_date.timestamp())
     
     header = f"""#subscription-userinfo: upload=0; download=0; total=0; expire={expiry_timestamp}
-# profile-title: {sub_name} {user_id}
+# profile-title: ALL-SUB {user_id}
 # profile-update-interval: 1440
 # expire: {expiry_date_str}
 # days: {days}
+# servers: 16
 # created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 """
-    template_content = header + template_content
-    template_content = template_content.replace(
-        "❀VPN USER❀",
-        f"❀{sub_name} {user_id} ({days} дней до {expiry_date_str})❀"
-    )
+    full_content = header + config_content
     
-    success = github_upload_file(f"{filename}.txt", template_content, folder=f"subscriptions/{folder}")
+    success = github_upload_file(f"{filename}.txt", full_content, folder=f"subscriptions/{folder}")
     if not success:
         return None
     success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
     if not success:
         return None
-    if not is_trial and sub_type != "custom":
-        github_upload_file(f"{filename}.type", sub_type, folder=f"subscriptions/{folder}")
+    github_upload_file(f"{filename}.type", "all", folder=f"subscriptions/{folder}")
     
     return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
-    for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub", "custom-sub"]:
-        content = github_get_file_content(f"subscriptions/{folder}/user_{user_id}.expiry")
-        if content:
-            try:
-                expiry_timestamp = int(content.strip())
-                now = int(time.time())
-                if now > expiry_timestamp:
-                    continue
-                days_left = (expiry_timestamp - now) // 86400
-                if days_left > 999:
-                    days_left = "∞"
-                expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S") if expiry_timestamp < 2147483647 else "Бессрочно"
-                subscription_link = f"{RAW_BASE}/subscriptions/{folder}/user_{user_id}.txt?t={int(time.time())}"
-                return days_left, expiry_date, subscription_link
-            except Exception as e:
-                print(f"Ошибка: {e}")
+    content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
+    if content:
+        try:
+            expiry_timestamp = int(content.strip())
+            now = int(time.time())
+            if now > expiry_timestamp:
                 return None, None, None
+            days_left = (expiry_timestamp - now) // 86400
+            expiry_date = datetime.fromtimestamp(expiry_timestamp).strftime("%d.%m.%Y %H:%M:%S")
+            subscription_link = f"{RAW_BASE}/subscriptions/all-sub/user_{user_id}.txt?t={int(time.time())}"
+            return days_left, expiry_date, subscription_link
+        except Exception as e:
+            print(f"Ошибка: {e}")
+            return None, None, None
     return None, None, None
-
-# ==================== КАСТОМНЫЙ КОНФИГУРАТОР (ПОДРОБНАЯ ИНФОРМАЦИЯ) ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_config')
-def custom_config_start(call):
-    user_id = call.from_user.id
-    user_vless_links[user_id] = []
-    
-    info_text = (
-        "⚙️ **КАСТОМНЫЙ КОНФИГУРАТОР**\n\n"
-        "📝 **Что это такое?**\n"
-        "Вы можете собрать свой собственный VPN конфиг из любых VLESS-серверов!\n\n"
-        "💰 **Стоимость:** 50⭐ / 0.5 TON / 50💵\n"
-        "⏰ **Срок действия:** БЕССРОЧНО!\n\n"
-        "📌 **Как это работает:**\n"
-        "1️⃣ Отправьте мне ВСЕ ваши vless:// ссылки одним сообщением\n"
-        "2️⃣ Каждая ссылка должна быть на новой строке\n"
-        "3️⃣ После отправки нажмите «Продолжить»\n"
-        "4️⃣ Выберите способ оплаты\n"
-        "5️⃣ Получите готовый конфиг со всеми серверами\n\n"
-        "📱 **Пример правильной отправки:**\n"
-        "```\n"
-        "vless://abc123@example.com:443?encryption=none#Server1\n"
-        "vless://def456@example2.com:443?encryption=none#Server2\n"
-        "```\n\n"
-        "⚠️ **ВАЖНО:**\n"
-        "• Принимаются ТОЛЬКО vless:// ссылки\n"
-        "• Поддерживается БЕЗЛИМИТНОЕ количество серверов\n"
-        "• После оплаты вы получите одну ссылку со ВСЕМИ серверами\n\n"
-        "✅ **Готовы? Отправьте ваши vless:// ссылки!**"
-    )
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Продолжить (после отправки ссылок)", callback_data="custom_proceed"))
-    keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="custom_cancel"))
-    
-    bot.send_message(
-        call.message.chat.id,
-        info_text,
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
-    bot.answer_callback_query(call.id)
-
-@bot.message_handler(func=lambda message: message.from_user.id in user_vless_links and user_vless_links[message.from_user.id] is not None)
-def collect_vless_links(message):
-    user_id = message.from_user.id
-    text = message.text.strip()
-    lines = text.split('\n')
-    vless_found = [line.strip() for line in lines if line.strip().startswith('vless://')]
-    
-    if not vless_found:
-        bot.reply_to(message, "❌ Не найдено vless:// ссылок!\n\nПожалуйста, отправьте ссылки в формате:\n`vless://...`\nКаждая ссылка с новой строки.", parse_mode='Markdown')
-        return
-    
-    user_vless_links[user_id] = vless_found
-    
-    servers_list = "\n".join([f"{i+1}. `{link[:50]}...`" for i, link in enumerate(vless_found[:5])])
-    if len(vless_found) > 5:
-        servers_list += f"\n... и ещё {len(vless_found) - 5} серверов"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Продолжить к оплате", callback_data="custom_proceed"))
-    keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="custom_cancel"))
-    
-    bot.send_message(
-        user_id,
-        f"✅ **Добавлено {len(vless_found)} серверов!**\n\n"
-        f"📋 **Список серверов:**\n{servers_list}\n\n"
-        f"💰 К оплате: {CUSTOM_PRICE_STARS}⭐ / {CUSTOM_PRICE_TON} TON / {CUSTOM_PRICE_BALANCE}💵\n\n"
-        f"Нажмите «Продолжить» для выбора способа оплаты",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_proceed')
-def custom_proceed(call):
-    user_id = call.from_user.id
-    links = user_vless_links.get(user_id, [])
-    if not links:
-        bot.answer_callback_query(call.id, "❌ Сначала отправьте vless:// ссылки!\nИспользуйте /start и выберите «⚙️ Собрать конфиг»", show_alert=True)
-        return
-    
-    pending_payments[user_id] = {"type": "custom", "links": links}
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("💎 TON (0.5)", callback_data="custom_ton"),
-        InlineKeyboardButton("⭐ Stars (50)", callback_data="custom_stars"),
-        InlineKeyboardButton("💰 Баланс (50💵)", callback_data="custom_balance")
-    )
-    keyboard.row(InlineKeyboardButton("❌ Отменить всё", callback_data="custom_cancel_full"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад в меню", callback_data="buy_menu"))
-    
-    bot.send_message(
-        call.message.chat.id,
-        f"⚙️ **КАСТОМНЫЙ КОНФИГ**\n\n"
-        f"📊 **Серверов:** {len(links)}\n"
-        f"⏰ **Срок:** Бессрочно\n"
-        f"💰 **Цена:** {CUSTOM_PRICE_TON} TON / {CUSTOM_PRICE_STARS}⭐ / {CUSTOM_PRICE_BALANCE}💵\n\n"
-        f"💳 **Выберите способ оплаты:**",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_cancel')
-def custom_cancel(call):
-    user_id = call.from_user.id
-    user_vless_links.pop(user_id, None)
-    pending_payments.pop(user_id, None)
-    bot.send_message(call.message.chat.id, "❌ **Сборка конфига отменена**\n\nВы можете начать заново через /start", parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_cancel_full')
-def custom_cancel_full(call):
-    user_id = call.from_user.id
-    user_vless_links.pop(user_id, None)
-    pending_payments.pop(user_id, None)
-    bot.send_message(call.message.chat.id, "❌ **Всё отменено!**\n\nВаши ссылки удалены из памяти бота.\n\nЧтобы начать заново - используйте /start", parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-# ==================== ОПЛАТА КАСТОМНОГО КОНФИГА ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_ton')
-def custom_ton_pay(call):
-    user_id = call.from_user.id
-    links = user_vless_links.get(user_id, [])
-    if not links:
-        bot.answer_callback_query(call.id, "❌ Ошибка: ссылки не найдены", show_alert=True)
-        return
-    
-    pending_payments[user_id] = {"type": "custom", "method": "ton", "links": links}
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data="custom_check_ton"))
-    keyboard.add(InlineKeyboardButton("❌ Отменить оплату", callback_data="custom_cancel_payment"))
-    
-    bot.send_message(
-        call.message.chat.id,
-        f"💳 **Оплата TON для кастомного конфига**\n\n"
-        f"💰 **Сумма:** {CUSTOM_PRICE_TON} TON\n"
-        f"📊 **Серверов:** {len(links)}\n"
-        f"⏰ **Срок:** Бессрочно\n\n"
-        f"💎 **Кошелёк:**\n`{TON_WALLET}`\n\n"
-        f"❗️ Переведите точную сумму и нажмите «✅ Я перевел»\n"
-        f"⏰ Время ожидания: 10 минут\n\n"
-        f"⚠️ Не забудьте указать ваш TELEGRAM ID в комментарии к переводу (опционально)",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
-    bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ КАСТОМНОГО КОНФИГА (TON)\n👤 {user_id}\n💰 {CUSTOM_PRICE_TON} TON\n📊 {len(links)} серверов")
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_stars')
-def custom_stars_pay(call):
-    user_id = call.from_user.id
-    links = user_vless_links.get(user_id, [])
-    if not links:
-        bot.answer_callback_query(call.id, "❌ Ошибка: ссылки не найдены", show_alert=True)
-        return
-    
-    pending_payments[user_id] = {"type": "custom", "method": "stars", "links": links}
-    
-    try:
-        keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton(f"⭐ Оплатить {CUSTOM_PRICE_STARS} Stars", pay=True))
-        keyboard.add(InlineKeyboardButton("❌ Отменить", callback_data="custom_cancel_payment"))
-        
-        bot.send_invoice(
-            chat_id=user_id,
-            title="⚙️ Кастомный конфиг VPN",
-            description=f"Свой конфиг из {len(links)} серверов\nБессрочная подписка",
-            invoice_payload="custom_config",
-            provider_token="",
-            currency="XTR",
-            prices=[LabeledPrice(label=f"{len(links)} серверов (бессрочно)", amount=CUSTOM_PRICE_STARS)],
-            start_parameter="custom_sub",
-            need_name=False,
-            need_phone_number=False,
-            need_email=False,
-            reply_markup=keyboard
-        )
-        bot.send_message(YOUR_ADMIN_ID, f"⭐ НАЧАЛО ОПЛАТЫ КАСТОМНОГО КОНФИГА (STARS)\n👤 {user_id}\n⭐ {CUSTOM_PRICE_STARS}\n📊 {len(links)} серверов")
-    except Exception as e:
-        bot.send_message(user_id, f"❌ Ошибка при создании счёта: {e}")
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_balance')
-def custom_balance_pay(call):
-    user_id = call.from_user.id
-    links = user_vless_links.get(user_id, [])
-    if not links:
-        bot.answer_callback_query(call.id, "❌ Ошибка: ссылки не найдены", show_alert=True)
-        return
-    
-    balance = get_balance(user_id)
-    if balance < CUSTOM_PRICE_BALANCE:
-        bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Ваш баланс: {balance} 💵\nПополните баланс через админа", show_alert=True)
-        return
-    
-    success, new_balance = deduct_balance(user_id, CUSTOM_PRICE_BALANCE)
-    if not success:
-        bot.answer_callback_query(call.id, "❌ Ошибка при списании средств", show_alert=True)
-        return
-    
-    link = create_custom_subscription(user_id, links)
-    if link:
-        bot.send_message(
-            call.message.chat.id,
-            f"✅ **КАСТОМНЫЙ КОНФИГ СОЗДАН!**\n\n"
-            f"💰 **Оплачено:** {CUSTOM_PRICE_BALANCE} 💵\n"
-            f"💰 **Остаток на балансе:** {new_balance} 💵\n"
-            f"📊 **Серверов:** {len(links)}\n"
-            f"⏰ **Срок:** Бессрочно\n\n"
-            f"🔗 **Ваша ссылка для v2rayNG:**\n`{link}`\n\n"
-            f"📱 Просто добавьте эту ссылку в приложение v2rayNG и все сервера появятся автоматически!",
-            parse_mode='Markdown'
-        )
-        bot.send_message(YOUR_ADMIN_ID, f"⚙️ КАСТОМНЫЙ КОНФИГ (БАЛАНС)\n👤 {user_id}\n💰 {CUSTOM_PRICE_BALANCE} 💵\n📊 {len(links)} серверов")
-        user_vless_links.pop(user_id, None)
-        pending_payments.pop(user_id, None)
-        bot.answer_callback_query(call.id, "✅ Конфиг создан!")
-    else:
-        update_balance(user_id, CUSTOM_PRICE_BALANCE)
-        bot.answer_callback_query(call.id, "❌ Ошибка при создании конфига", show_alert=True)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_check_ton')
-def custom_check_payment(call):
-    user_id = call.from_user.id
-    pending = pending_payments.get(user_id, {})
-    if pending.get("type") != "custom" or pending.get("method") != "ton":
-        bot.answer_callback_query(call.id, "❌ Нет активного платежа", show_alert=True)
-        return
-    
-    bot.send_message(call.message.chat.id, "⏳ **Проверяем оплату...**\n\nПожалуйста, подождите, это может занять до 10 минут.\nПроверка происходит каждые 15 секунд.", parse_mode='Markdown')
-    Thread(target=monitor_custom_payment, args=(call.message.chat.id, user_id)).start()
-    bot.answer_callback_query(call.id, "🔍 Начинаем проверку...")
-
-@bot.callback_query_handler(func=lambda call: call.data == 'custom_cancel_payment')
-def custom_cancel_payment(call):
-    user_id = call.from_user.id
-    user_vless_links.pop(user_id, None)
-    pending_payments.pop(user_id, None)
-    bot.send_message(call.message.chat.id, "❌ **Оплата отменена!**\n\nВаши ссылки удалены из памяти.\n\nЧтобы начать заново - используйте /start", parse_mode='Markdown')
-    bot.answer_callback_query(call.id, "✅ Отменено")
 
 # ==================== ЛОКАЦИИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
@@ -834,34 +1219,21 @@ def start_command(message):
     send_user_info_to_admin(message)
     keyboard = InlineKeyboardMarkup(row_width=2)
     
-    # Ряд 1: Профиль и Купить VPN
     keyboard.row(
         InlineKeyboardButton("👤 Профиль", callback_data="profile"),
         InlineKeyboardButton("💰 Купить VPN", callback_data="buy_menu")
     )
-    
-    # Ряд 2: Пробный период и Собрать конфиг
     keyboard.row(
         InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
-        InlineKeyboardButton("⚙️ Собрать конфиг", callback_data="custom_config")
+        InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     )
-    
-    # Ряд 3: Соглашение и Политика конфиденциальности
-    keyboard.row(
-        InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn"),
-        InlineKeyboardButton("📚 Политика конфиденциальности", callback_data="privacy_policy")
-    )
-    
-    # Ряд 4: Канал с новостями и Инструкция
     keyboard.row(
         InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL),
         InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
     )
-    
-    # Ряд 5: Поддержка и Локации
     keyboard.row(
-        InlineKeyboardButton("🛠️ Поддержка", callback_data="support"),
-        InlineKeyboardButton("📍 Локации", callback_data="locations")
+        InlineKeyboardButton("📍 Локации", callback_data="locations"),
+        InlineKeyboardButton("📚 Политика", callback_data="privacy_policy")
     )
     
     caption = (
@@ -869,12 +1241,11 @@ def start_command(message):
         "✅ Быстрые серверы\n"
         "✅ Обход ограничений\n"
         "✅ Безлимитный трафик\n\n"
-        "**Тарифы (30 дней):**\n"
-        "🪙 DEF-SUB — 0.5 TON / 50⭐ / 50💵\n"
-        "⭐ ULTRA-SUB — 0.7 TON / 75⭐ / 75💵\n"
-        "🔑 FULL-SUB — 1 TON / 100⭐ / 100💵\n"
-        "🛡️ FAST-SUB — 1.5 TON / 150⭐ / 150💵\n\n"
-        "⚙️ **Собрать свой конфиг** — 0.5 TON / 50⭐ / 50💵 (бессрочно)\n\n"
+        "**📦 ЕДИНЫЙ ТАРИФ ALL-SUB**\n"
+        "🌍 **16 серверов** (Нидерланды, Германия, Финляндия, Польша, Латвия, Чехия, США)\n"
+        "⚡ **Автоматический выбор лучшего сервера**\n"
+        "🔒 **Блокировка рекламы и трекеров**\n\n"
+        "💰 **Цена:** 2 TON / 200⭐ / 200💵 (30 дней)\n\n"
         "🎁 Пробный период 3 дня — бесплатно!\n\n"
         "Выберите действие 👇"
     )
@@ -898,16 +1269,16 @@ def profile_command(message):
     text += f"🆔 ID: `{user_id}`\n"
     text += f"💰 Баланс: {balance} 💵\n"
     if days_left is None:
-        text += "📅 Статус: ❌ **Нет активной подписки**"
-    elif days_left == "expired":
-        text += "📅 Статус: ⏰ **Подписка истекла**"
+        text += "📅 Статус: ❌ **Нет активной подписки**\n\n💡 Используйте /buy для покупки ALL-SUB"
     else:
+        text += f"📦 **ТАРИФ: ALL-SUB**\n"
+        text += f"🌍 16 серверов с автовыбором\n"
         text += f"📅 Статус: ✅ **Активна**\n"
         text += f"📅 Осталось дней: {days_left}\n"
         text += f"📅 Действует до: `{expiry_date}`\n"
         text += f"🔗 Ссылка для v2rayNG:\n`{subscription_link}`\n\n"
-        text += f"🔄 Конфиг обновляется автоматически каждые 6 часов\n"
-        text += f"⚠️ Если подписка не работает - удалите старую и добавьте эту ссылку заново"
+        text += f"🔄 Конфиг обновляется автоматически\n"
+        text += f"⚠️ Если не работает - удалите старую и добавьте эту ссылку заново"
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['buy'])
@@ -915,28 +1286,68 @@ def profile_command(message):
 def buy_command(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.row(
-        InlineKeyboardButton("💵 DEF-SUB", callback_data="sub_def"),
-        InlineKeyboardButton("⭐ ULTRA-SUB", callback_data="sub_ultra")
+        InlineKeyboardButton("📆 30 дней", callback_data="buy_30"),
+        InlineKeyboardButton("📆 60 дней", callback_data="buy_60"),
+        InlineKeyboardButton("📆 90 дней", callback_data="buy_90")
     )
-    keyboard.row(
-        InlineKeyboardButton("🔑 FULL-SUB", callback_data="sub_full"),
-        InlineKeyboardButton("🛡️ FAST-SUB", callback_data="sub_fast")
-    )
-    keyboard.row(
-        InlineKeyboardButton("⚙️ CUSTOM (свой конфиг)", callback_data="custom_config"),
-        InlineKeyboardButton("◀️ Назад", callback_data="back_to_main")
-    )
+    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
+    
     bot.send_message(
         message.chat.id,
-        "💎 **Выберите тип подписки:**\n\n"
-        "🪙 DEF-SUB — Только VPN 0.5 TON / 50⭐ / 50💵\n"
-        "⭐ ULTRA-SUB — Лучшие серверы 0.7 TON / 75⭐ / 75💵\n"
-        "🔑 FULL-SUB — Все серверы 1 TON / 100⭐ / 100💵\n"
-        "🛡️ FAST-SUB — Максимальная скорость 1.5 TON / 150⭐ / 150💵\n"
-        "⚙️ CUSTOM — Свой конфиг 0.5 TON / 50⭐ / 50💵 (бессрочно)",
+        "💎 **ALL-SUB — ЕДИНЫЙ ТАРИФ**\n\n"
+        "🌍 **16 серверов:**\n"
+        "🇳🇱 Нидерланды (3 сервера)\n"
+        "🇩🇪 Германия (3 сервера)\n"
+        "🇫🇮 Финляндия (2 сервера)\n"
+        "🇵🇱 Польша (3 сервера)\n"
+        "🇱🇻 Латвия (2 сервера)\n"
+        "🇨🇿 Чехия (1 сервер)\n"
+        "🇺🇸 США (1 сервер)\n\n"
+        "⚡ **Автовыбор лучшего сервера**\n"
+        "🔒 **Встроенная блокировка рекламы и трекеров**\n\n"
+        "💰 **Цены:**\n"
+        "• 30 дней — 2 TON / 200⭐ / 200💵\n"
+        "• 60 дней — 3.5 TON / 350⭐ / 350💵\n"
+        "• 90 дней — 5 TON / 500⭐ / 500💵\n\n"
+        "📅 Выберите период:",
         reply_markup=keyboard,
         parse_mode='Markdown'
     )
+
+@bot.callback_query_handler(func=lambda call: call.data == 'buy_30')
+def buy_30(call):
+    process_payment(call, 30, 2.0, 200, 200)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'buy_60')
+def buy_60(call):
+    process_payment(call, 60, 3.5, 350, 350)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'buy_90')
+def buy_90(call):
+    process_payment(call, 90, 5.0, 500, 500)
+
+def process_payment(call, days, ton, stars, bal):
+    pending_payments[call.from_user.id] = {"days": days}
+    keyboard = InlineKeyboardMarkup()
+    keyboard.row(
+        InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{ton}"),
+        InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars}")
+    )
+    keyboard.row(
+        InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{bal}"),
+        InlineKeyboardButton("◀️ Назад", callback_data="buy_menu")
+    )
+    bot.edit_message_text(
+        f"💳 **Способ оплаты ALL-SUB**\n\n"
+        f"📅 {days} дней\n"
+        f"🌍 16 серверов с автовыбором\n\n"
+        f"💎 TON: {ton}\n"
+        f"⭐ Stars: {stars}\n"
+        f"💰 Баланс: {bal} 💵",
+        call.message.chat.id, call.message.message_id,
+        reply_markup=keyboard, parse_mode='Markdown'
+    )
+    bot.answer_callback_query(call.id)
 
 @bot.message_handler(commands=['trial'])
 @require_subscription
@@ -949,18 +1360,19 @@ def trial_command(message):
     if days_left is not None and days_left != "expired":
         bot.reply_to(message, "❌ У вас уже есть активная подписка!")
         return
-    # ИСПРАВЛЕНО: теперь 3 дня вместо 7
-    link = create_user_subscription(user_id, 3, sub_type="", is_trial=True)
+    
+    link = create_subscription(user_id, 3)
     if link:
         github_upload_file(f"trial_{user_id}", "used", folder="trials")
         bot.send_message(
             user_id,
-            f"🎁 **Пробный период активирован!**\n\n"
+            f"🎁 **Пробный период ALL-SUB активирован!**\n\n"
+            f"🌍 16 серверов с автовыбором\n"
             f"📅 Действует: 3 дня\n\n"
             f"🔗 **Ваша ссылка:**\n{link}\n\n"
             f"📱 Добавьте ссылку в v2rayNG"
         )
-        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД**\n👤 {user_id}")
+        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД ALL-SUB**\n👤 {user_id}")
     else:
         bot.reply_to(message, "❌ Ошибка при активации пробного периода")
 
@@ -985,36 +1397,32 @@ def support_command(message):
 @require_subscription
 def refresh_config_command(message):
     user_id = message.from_user.id
-    days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
-    if days_left is None or days_left == "expired":
-        bot.reply_to(message, "❌ У вас нет активной подписки! Используйте /start чтобы купить")
+    days_left, exp_date, _ = get_user_subscription_info(user_id)
+    if days_left is None:
+        bot.reply_to(message, "❌ У вас нет активной подписки!")
         return
-    sub_type = get_user_subscription_type(user_id)
-    if not sub_type:
-        bot.reply_to(message, "❌ Не удалось определить тип подписки")
-        return
-    success = force_update_user_config(user_id, sub_type)
+    success = force_update_user_config(user_id)
     if success:
         _, _, new_link = get_user_subscription_info(user_id)
         bot.reply_to(
             message,
-            f"✅ **Ваш конфиг обновлен до последней версии!**\n\n"
-            f"📱 Пожалуйста, обновите ссылку в приложении:\n{new_link}\n\n🔄 Новые сервера добавлены автоматически!\n\n⚠️ Удалите старую подписку и добавьте эту новую ссылку!",
+            f"✅ **Ваш конфиг ALL-SUB обновлен!**\n\n"
+            f"📱 Обновите ссылку в приложении:\n{new_link}\n\n"
+            f"🌍 Все 16 серверов добавлены автоматически!",
             parse_mode='Markdown'
         )
-        bot.send_message(YOUR_ADMIN_ID, f"🔄 Пользователь {user_id} обновил конфиг вручную")
     else:
-        bot.reply_to(message, "❌ Ошибка при обновлении конфига. Попробуйте позже")
+        bot.reply_to(message, "❌ Ошибка при обновлении")
 
 # ==================== КОМАНДЫ АДМИНА ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
     if message.from_user.id != YOUR_ADMIN_ID:
-        bot.reply_to(message, "❌ У вас нет прав для этой команды")
+        bot.reply_to(message, "❌ У вас нет прав!")
         return
     parts = message.text.split()
     if len(parts) != 3:
-        bot.reply_to(message, "❌ Использование: /pay `user_id` `сумма`\n\nПример: /pay 123456789 100", parse_mode='Markdown')
+        bot.reply_to(message, "❌ Использование: /pay `user_id` `сумма`")
         return
     try:
         user_id = int(parts[1])
@@ -1024,15 +1432,10 @@ def admin_add_balance(message):
             return
         success, new_balance = update_balance(user_id, amount)
         if success:
-            bot.reply_to(message, f"✅ Баланс пользователя `{user_id}` пополнен на {amount} 💵\n💰 Текущий баланс: {new_balance} 💵", parse_mode='Markdown')
-            try:
-                bot.send_message(user_id, f"🎉 **Баланс пополнен!**\n\n💰 Сумма: {amount} 💵\n💰 Баланс: {new_balance} 💵", parse_mode='Markdown')
-            except:
-                pass
-        else:
-            bot.reply_to(message, "❌ Ошибка при пополнении баланса")
-    except ValueError:
-        bot.reply_to(message, "❌ Неверный формат. Использование: /pay `user_id` `сумма`", parse_mode='Markdown')
+            bot.reply_to(message, f"✅ Баланс `{user_id}` пополнен на {amount} 💵\n💰 Текущий баланс: {new_balance} 💵", parse_mode='Markdown')
+            bot.send_message(user_id, f"🎉 **Баланс пополнен!**\n\n💰 Сумма: {amount} 💵\n💰 Баланс: {new_balance} 💵\n\n💡 Используйте /buy для покупки ALL-SUB", parse_mode='Markdown')
+    except:
+        bot.reply_to(message, "❌ Неверный формат")
 
 @bot.message_handler(commands=['users_count'])
 def users_count(message):
@@ -1042,90 +1445,86 @@ def users_count(message):
     users = get_all_users()
     bot.reply_to(message, f"👥 Всего пользователей: {len(users)}")
 
-@bot.message_handler(commands=['update_all_configs'])
-def admin_update_all_configs(message):
-    if message.from_user.id != YOUR_ADMIN_ID:
-        bot.reply_to(message, "❌ Только для админа")
+# ==================== CALLBACK ОБРАБОТЧИКИ ОПЛАТЫ ====================
+@bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
+def handle_balance_payment(call):
+    parts = call.data.split('_')
+    days = int(parts[1])
+    balance_amount = int(parts[2])
+    user_id = call.from_user.id
+    balance = get_balance(user_id)
+    
+    if balance < balance_amount:
+        bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
         return
-    bot.reply_to(message, "🔄 Начинаю обновление всех активных подписок... Это может занять время")
-    Thread(target=update_all_active_subscriptions, args=(message.chat.id,)).start()
-
-def update_all_active_subscriptions(admin_chat_id):
-    updated = 0
-    errors = 0
-    skipped = 0
-    users = get_all_users()
-    bot.send_message(admin_chat_id, f"📊 Найдено {len(users)} пользователей. Начинаю обновление...")
-    for user_id in users:
-        days_left, _, _ = get_user_subscription_info(user_id)
-        if days_left is None or days_left == "expired":
-            skipped += 1
-            continue
-        sub_type = get_user_subscription_type(user_id)
-        if not sub_type:
-            sub_type = "full"
-        if sub_type != "custom":
-            if force_update_user_config(user_id, sub_type):
-                updated += 1
-                time.sleep(0.1)
-            else:
-                errors += 1
-        else:
-            skipped += 1
-    report = f"✅ **ОБНОВЛЕНИЕ ЗАВЕРШЕНО**\n\n🔄 Обновлено: {updated}\n⏭️ Пропущено (неактивны/кастомные): {skipped}\n❌ Ошибок: {errors}\n📊 Всего проверено: {len(users)}"
-    bot.send_message(admin_chat_id, report, parse_mode='Markdown')
-
-@bot.message_handler(commands=['renew_all_links'])
-def renew_all_links(message):
-    if message.from_user.id != YOUR_ADMIN_ID:
-        bot.reply_to(message, "❌ Только для админа")
+    
+    success, new_balance = deduct_balance(user_id, balance_amount)
+    if not success:
+        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
         return
-    bot.reply_to(message, "🔄 Обновляю ссылки для всех активных пользователей...")
-    users = get_all_users()
-    updated = 0
-    for user_id in users:
-        days_left, expiry_date, _ = get_user_subscription_info(user_id)
-        if days_left and days_left != "expired" and days_left != "∞":
-            sub_type = get_user_subscription_type(user_id)
-            if not sub_type:
-                sub_type = "full"
-            if sub_type != "custom":
-                new_link = create_user_subscription(user_id, days_left, sub_type, is_trial=False)
-                if new_link:
-                    bot.send_message(
-                        user_id,
-                        f"🔄 **Ежемесячное обновление VPN**\n\n"
-                        f"Ваша новая ссылка (старая больше не действительна):\n{new_link}\n\n"
-                        f"Пожалуйста, удалите старую подписку в v2rayNG и добавьте эту новую ссылку.\n"
-                        f"Действует до: {expiry_date}"
-                    )
-                    updated += 1
-                    time.sleep(0.3)
-    bot.reply_to(message, f"✅ Обновлено ссылок для {updated} пользователей.")
+    
+    link = create_subscription(user_id, days)
+    if link:
+        bot.send_message(call.message.chat.id, 
+            f"✅ **Подписка ALL-SUB создана!**\n"
+            f"💰 {balance_amount} 💵\n"
+            f"💰 Остаток: {new_balance} 💵\n"
+            f"📅 {days} дней\n"
+            f"🌍 16 серверов\n\n"
+            f"🔗 {link}")
+        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵\n📅 {days}д\n📦 ALL-SUB")
+        bot.answer_callback_query(call.id, "✅ Оплачено!")
+    else:
+        update_balance(user_id, balance_amount)
+        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
 
-@bot.message_handler(commands=['check'])
-def check_subs(message):
-    if message.from_user.id != YOUR_ADMIN_ID:
-        bot.reply_to(message, "❌ Только для админа")
-        return
-    user_id = message.from_user.id
-    reply = f"🔍 ДИАГНОСТИКА ДЛЯ user_id: {user_id}\n\n"
-    found = False
-    for folder in ["def-sub", "ultra-sub", "full-sub", "fast-sub", "trial-sub", "custom-sub"]:
-        test_file = f"subscriptions/{folder}/user_{user_id}.expiry"
-        r = requests.get(f"https://api.github.com/repos/{GITHUB_REPO}/contents/{test_file}", headers={"Authorization": f"token {GITHUB_TOKEN}"})
-        if r.status_code == 200:
-            content = base64.b64decode(r.json()["content"]).decode('utf-8')
-            reply += f"✅ Файл найден в папке {folder}/\n📅 Содержимое: {content}\n"
-            now, expiry = int(time.time()), int(content.strip())
-            reply += f"⏰ ПОДПИСКА ИСТЕКЛА\n" if now > expiry else f"✅ ПОДПИСКА АКТИВНА, осталось {(expiry - now) // 86400} дней\n"
-            found = True
-            break
-    if not found:
-        reply += f"❌ Файл НЕ НАЙДЕН ни в одной папке\n"
-    bot.reply_to(message, reply)
+@bot.callback_query_handler(func=lambda call: call.data.startswith('ton_'))
+def handle_ton_payment(call):
+    parts = call.data.split('_')
+    days = int(parts[1])
+    amount_ton = float(parts[2])
+    user_id = call.from_user.id
+    pending_payments[user_id] = {"days": days}
+    
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data=f"check_{days}_{amount_ton}"))
+    keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
+    bot.send_message(call.message.chat.id, 
+        f"💳 **Оплата TON для ALL-SUB**\n\n"
+        f"💰 {amount_ton} TON\n"
+        f"📅 {days} дней\n"
+        f"🌍 16 серверов\n\n"
+        f"**Кошелёк:**\n`{TON_WALLET}`\n\n"
+        f"Переведите и нажмите «✅ Я перевел»\n⏰ 10 минут",
+        reply_markup=keyboard, parse_mode='Markdown')
+    bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ TON\n👤 {user_id}\n💰 {amount_ton} TON\n📦 ALL-SUB")
+    bot.answer_callback_query(call.id)
 
-# ==================== CALLBACK ОБРАБОТЧИКИ ====================
+@bot.callback_query_handler(func=lambda call: call.data.startswith('stars_'))
+def handle_stars_payment(call):
+    parts = call.data.split('_')
+    days = int(parts[1])
+    stars_amount = int(parts[2])
+    user_id = call.from_user.id
+    send_stars_invoice(user_id, days, stars_amount)
+    bot.answer_callback_query(call.id, "⭐ Счёт отправлен!")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
+def handle_check_payment(call):
+    parts = call.data.split('_')
+    days = int(parts[1])
+    amount_ton = float(parts[2])
+    bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
+    Thread(target=monitor_payment, args=(call.from_user.id, amount_ton, days)).start()
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'cancel')
+def cancel_payment(call):
+    pending_payments.pop(call.from_user.id, None)
+    bot.send_message(call.message.chat.id, "❌ Оплата отменена")
+    bot.answer_callback_query(call.id)
+
+# ==================== ОСТАЛЬНЫЕ CALLBACKИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'support')
 def support(call):
     support_command(call.message)
@@ -1138,7 +1537,6 @@ def profile(call):
             self.from_user = type('obj', (object,), {'id': user_id})()
             self.chat = type('obj', (object,), {'id': chat_id})()
             self.id = None
-    
     fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
     profile_command(fake_msg)
     bot.answer_callback_query(call.id)
@@ -1150,7 +1548,6 @@ def refresh_profile(call):
             self.from_user = type('obj', (object,), {'id': user_id})()
             self.chat = type('obj', (object,), {'id': chat_id})()
             self.id = None
-    
     fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
     refresh_config_command(fake_msg)
     bot.answer_callback_query(call.id)
@@ -1168,141 +1565,6 @@ def trial(call):
 @bot.callback_query_handler(func=lambda call: call.data == 'back_to_main')
 def back_main(call):
     start_command(call.message)
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_def')
-def sub_def_menu(call):
-    text = "💵 **DEF-SUB** — Только VPN\n\n💰 **Цены:**\n• 30 дней — 0.5 TON / 50⭐ / 50💵\n• 60 дней — 0.9 TON / 85⭐ / 90💵\n• 90 дней — 1.25 TON / 120⭐ / 135💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton("📆 30", callback_data="def_30"), InlineKeyboardButton("📆 60", callback_data="def_60"), InlineKeyboardButton("📆 90", callback_data="def_90"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_ultra')
-def sub_ultra_menu(call):
-    text = "⭐ **ULTRA-SUB** — Лучшие серверы\n\n💰 **Цены:**\n• 30 дней — 0.7 TON / 75⭐ / 75💵\n• 60 дней — 1.2 TON / 120⭐ / 130💵\n• 90 дней — 1.7 TON / 170⭐ / 190💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton("📆 30", callback_data="ultra_30"), InlineKeyboardButton("📆 60", callback_data="ultra_60"), InlineKeyboardButton("📆 90", callback_data="ultra_90"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_full')
-def sub_full_menu(call):
-    text = "🔑 **FULL-SUB** — Все серверы\n\n💰 **Цены:**\n• 30 дней — 1 TON / 100⭐ / 100💵\n• 60 дней — 1.75 TON / 170⭐ / 170💵\n• 90 дней — 2.5 TON / 250⭐ / 275💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton("📆 30", callback_data="full_30"), InlineKeyboardButton("📆 60", callback_data="full_60"), InlineKeyboardButton("📆 90", callback_data="full_90"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'sub_fast')
-def sub_fast_menu(call):
-    text = "🛡️ **FAST-SUB** — Максимальная скорость\n\n💰 **Цены:**\n• 30 дней — 1.5 TON / 150⭐ / 150💵\n• 60 дней — 2.5 TON / 250⭐ / 250💵\n• 90 дней — 3.5 TON / 350⭐ / 350💵\n\nВыберите период:"
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton("📆 30", callback_data="fast_30"), InlineKeyboardButton("📆 60", callback_data="fast_60"), InlineKeyboardButton("📆 90", callback_data="fast_90"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
-    bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-# ==================== ПЕРИОДЫ ====================
-def process_period(call, sub_type, days, ton, stars, bal):
-    pending_payments[call.from_user.id] = {"days": days, "sub_type": sub_type}
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{ton}"), InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars}"))
-    keyboard.row(InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{bal}"))
-    keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data=f"sub_{sub_type}"))
-    bot.edit_message_text(f"💳 **Способ оплаты**\n\n📅 {days} дней\n💎 TON: {ton}\n⭐ Stars: {stars}\n💰 Баланс: {bal} 💵",
-                          call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('def_'))
-def def_period(call):
-    days = int(call.data.split('_')[1])
-    prices = {30: (0.5,50,50), 60: (0.9,85,90), 90: (1.25,120,135)}
-    process_period(call, "def", days, *prices[days])
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('ultra_'))
-def ultra_period(call):
-    days = int(call.data.split('_')[1])
-    prices = {30: (0.7,75,75), 60: (1.2,120,130), 90: (1.7,170,190)}
-    process_period(call, "ultra", days, *prices[days])
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('full_'))
-def full_period(call):
-    days = int(call.data.split('_')[1])
-    prices = {30: (1,100,100), 60: (1.75,170,170), 90: (2.5,250,275)}
-    process_period(call, "full", days, *prices[days])
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('fast_'))
-def fast_period(call):
-    days = int(call.data.split('_')[1])
-    prices = {30: (1.5,150,150), 60: (2.5,250,250), 90: (3.5,350,350)}
-    process_period(call, "fast", days, *prices[days])
-
-# ==================== ОБРАБОТЧИКИ ОПЛАТЫ ====================
-@bot.callback_query_handler(func=lambda call: call.data.startswith('balance_') and not call.data.startswith('balance_custom'))
-def handle_balance_payment(call):
-    parts = call.data.split('_')
-    days = int(parts[1])
-    balance_amount = int(parts[2])
-    user_id = call.from_user.id
-    sub_type = pending_payments.get(user_id, {}).get("sub_type", "full")
-    balance = get_balance(user_id)
-    if balance < balance_amount:
-        bot.answer_callback_query(call.id, f"❌ Недостаточно средств! Баланс: {balance} 💵", show_alert=True)
-        return
-    success, new_balance = deduct_balance(user_id, balance_amount)
-    if not success:
-        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
-        return
-    link = create_user_subscription(user_id, days, sub_type, is_trial=False)
-    if link:
-        bot.send_message(call.message.chat.id, f"✅ **Подписка создана!**\n💰 {balance_amount} 💵\n💰 Остаток: {new_balance} 💵\n📅 {days} дней\n\n🔗 {link}")
-        bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ!\n👤 {user_id}\n💰 {balance_amount} 💵")
-        bot.answer_callback_query(call.id, "✅ Оплачено!")
-    else:
-        update_balance(user_id, balance_amount)
-        bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('ton_') and not call.data.startswith('ton_custom'))
-def handle_ton_payment(call):
-    parts = call.data.split('_')
-    days = int(parts[1])
-    amount_ton = float(parts[2])
-    user_id = call.from_user.id
-    sub_type = pending_payments.get(user_id, {}).get("sub_type", "full")
-    pending_payments[user_id] = {"days": days, "ton": amount_ton, "sub_type": sub_type, "start_time": time.time()}
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Я перевел(а)", callback_data=f"check_{days}_{amount_ton}_{sub_type}"))
-    keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
-    bot.send_message(call.message.chat.id, f"💳 **Оплата TON**\n\n💰 {amount_ton} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Я перевел»\n⏰ 10 минут", reply_markup=keyboard, parse_mode='Markdown')
-    bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ TON\n👤 {user_id}\n💰 {amount_ton} TON")
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('stars_') and not call.data.startswith('stars_custom'))
-def handle_stars_payment(call):
-    parts = call.data.split('_')
-    days = int(parts[1])
-    stars_amount = int(parts[2])
-    user_id = call.from_user.id
-    sub_type = pending_payments.get(user_id, {}).get("sub_type", "full")
-    send_stars_invoice(user_id, days, stars_amount, sub_type)
-    bot.answer_callback_query(call.id, "⭐ Счёт отправлен!")
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
-def handle_check_payment(call):
-    parts = call.data.split('_')
-    days, amount_ton, sub_type = int(parts[1]), float(parts[2]), parts[3]
-    bot.send_message(call.message.chat.id, "⏳ Проверяем оплату...")
-    Thread(target=monitor_payment, args=(call.from_user.id, amount_ton, days, sub_type)).start()
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'cancel')
-def cancel_payment(call):
-    pending_payments.pop(call.from_user.id, None)
-    bot.send_message(call.message.chat.id, "❌ Оплата отменена")
     bot.answer_callback_query(call.id)
 
 # ==================== УТИЛИТЫ ====================
@@ -1327,12 +1589,8 @@ if __name__ == "__main__":
     web_thread.start()
     print("🌐 Веб-сервер запущен на порту 10000")
     print("🤖 Бот запущен. Репозиторий должен быть ПУБЛИЧНЫМ!")
-    print("🔒 Включена проверка подписки на канал @" + REQUIRED_CHANNEL)
-    print("⚙️ Добавлена функция КАСТОМНОГО КОНФИГУРАТОРА с подробным описанием!")
-    print("❌ Добавлены кнопки ОТМЕНЫ для всех этапов оплаты!")
-    print("📍 Добавлена кнопка ЛОКАЦИИ с фото и статьей!")
-    print("📚 Добавлена кнопка ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ!")
-    print("🎁 ИСПРАВЛЕНО: пробный период теперь 3 дня (было 7)!")
+    print("📦 ЕДИНЫЙ ТАРИФ ALL-SUB — 16 серверов, цена 2 TON / 200⭐ / 200💵")
+    print("🎁 Пробный период 3 дня")
     while True:
         try:
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
