@@ -1192,7 +1192,7 @@
         window.addEventListener('load', () => setTimeout(updateSlider, 50));
         window.addEventListener('resize', updateSlider);
 
-        // Глобальная переменная для репозитория
+        // ТОЛЬКО ALL-SUB — единая подписка, старых нет
         const GITHUB_REPO = "folwixxxx/-VPN-FOLWIXXXXX-";
         const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
 
@@ -1236,7 +1236,7 @@
                 return;
             }
 
-            // ТОЛЬКО ALL-SUB — единая подписка
+            // ТОЛЬКО ALL-SUB — НЕТ СТАРЫХ ПАПОК
             const folder = "all-sub";
             
             try {
@@ -1262,7 +1262,7 @@
                         return;
                     }
 
-                    console.log(`✅ Найдена активная подписка, истекает: ${ts}`);
+                    console.log(`✅ Найдена активная подписка ALL-SUB, истекает: ${ts}`);
                     expiryTimestamp = ts;
                     if (heartbeatInterval) clearInterval(heartbeatInterval);
                     heartbeatInterval = setInterval(updateTimer, 1000);
