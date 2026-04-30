@@ -8,30 +8,44 @@ import hmac
 from datetime import datetime, timedelta
 from threading import Thread
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, BotCommand, BotCommandScopeDefault, WebAppInfo
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, BotCommand, WebAppInfo
 from flask import Flask, request, Response
 
-# ==================== ТОКЕНЫ ====================
+# ==================== КОНФИГУРАЦИЯ ====================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
-GITHUB_REPO = os.environ.get("GITHUB_REPO")
+GITHUB_REPO = os.environ.get("GITHUB_REPO")  # формат: "username/repo"
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
 API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
-# ==================== ЦЕНЫ ====================
+# Цены
 PRICES = {
     30: {"ton": 2.0, "stars": 200, "balance": 200},
     60: {"ton": 3.5, "stars": 350, "balance": 350},
     90: {"ton": 5.0, "stars": 500, "balance": 500}
 }
 
-# ==================== КАНАЛ ====================
+# Канал
 REQUIRED_CHANNEL = "folwixxxvpn"
 CHANNEL_URL = f"https://t.me/{REQUIRED_CHANNEL}"
 
+# ID и юзернейм админа
+YOUR_ADMIN_ID = 8684879669
+YOUR_USERNAME = "ylvvvl"
+
+# Ссылки на баннеры
+BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
+LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/locations.jpg"
+
+# === ГЛАВНАЯ ССЫЛКА НА ЛИЧНЫЙ КАБИНЕТ (ИСПРАВЛЕНА!) ===
+# Используем прямое GitHub Pages ссылку, которая у вас работает
+CABINET_URL_BASE = "https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/cabinet.html"
+INSTRUCTIONS_URL_BASE = "https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html"
+
+# === ПРОВЕРКА ПЕРЕМЕННЫХ ===
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
     raise Exception("❌ Ошибка: не все переменные окружения заданы!")
 
@@ -39,13 +53,7 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 pending_payments = {}
 user_vless_links = {}
 
-YOUR_ADMIN_ID = 8684879669
-YOUR_USERNAME = "ylvvvl"
-
-BANNER_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/banner.jpg"
-LOCATIONS_IMAGE_URL = "https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/locations.jpg"
-
-# ==================== ФУНКЦИИ ====================
+# ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 def is_subscribed(user_id):
     try:
         member = bot.get_chat_member(f"@{REQUIRED_CHANNEL}", user_id)
@@ -71,14 +79,6 @@ def check_subscription_callback(call):
         bot.answer_callback_query(call.id, "Подписка подтверждена!")
     else:
         bot.answer_callback_query(call.id, "Вы не подписаны!", show_alert=True)
-
-def generate_user_token(user_id, expiry_timestamp):
-    message = f"{user_id}_{expiry_timestamp}_{SECRET_KEY}"
-    return hashlib.md5(message.encode()).hexdigest()[:32]
-
-def verify_user_token(user_id, token, expiry_timestamp):
-    expected = generate_user_token(user_id, expiry_timestamp)
-    return hmac.compare_digest(expected, token)
 
 def github_upload_file(filename, content, folder=""):
     full_path = f"{folder}/{filename}" if folder else filename
@@ -140,6 +140,7 @@ def get_template_content():
 
 def create_subscription(user_id, days):
     folder_path = "subscriptions/all-sub"
+    # Создаем папку если нужно
     gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
@@ -201,7 +202,7 @@ def get_custom_subscription_info(user_id):
             ts = int(content.strip())
             now = int(time.time())
             if now > ts:
-                return None, None, None
+                return None, None
             custom_link = f"{RAW_BASE}/subscriptions/custom-sub/user_{user_id}.txt?t={int(time.time())}"
             return True, custom_link
         except:
@@ -274,20 +275,6 @@ def send_stars_invoice(user_id, days, stars_amount):
         return True
     except:
         return False
-
-@bot.pre_checkout_query_handler(func=lambda query: True)
-def handle_pre_checkout(query):
-    bot.answer_pre_checkout_query(query.id, ok=True)
-
-@bot.message_handler(content_types=['successful_payment'])
-def handle_successful_payment(message):
-    parts = message.successful_payment.invoice_payload.split('_')
-    if len(parts) >= 3 and parts[0] == "stars":
-        days = int(parts[1])
-        link = create_subscription(message.from_user.id, days)
-        if link:
-            bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 {days} дней\n🌍 16 серверов")
-            bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
 # ==================== КАСТОМНЫЙ КОНФИГ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'custom_config')
@@ -421,9 +408,14 @@ def custom_check_payment(call):
     bot.answer_callback_query(call.id)
 
 def create_custom_subscription(user_id, vless_links):
-    ensure_folder("subscriptions/custom-sub")
+    folder_path = "subscriptions/custom-sub"
+    # Создаем папку если нужно
+    gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
+    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
+    
     filename = f"user_{user_id}"
-    folder = "custom-sub"
     
     header = f"""# profile-title: ⚙️ CUSTOM CONFIG {user_id}
 # profile-update-interval: 1440
@@ -432,23 +424,17 @@ def create_custom_subscription(user_id, vless_links):
 
 """
     content = header + "\n".join(vless_links)
-    expiry_timestamp = 2147483647
+    expiry_timestamp = 2147483647  # "бесконечный" timestamp
     
-    success = github_upload_file(f"{filename}.txt", content, folder=f"subscriptions/{folder}")
+    success = github_upload_file(f"{filename}.txt", content, folder=folder_path)
     if not success:
         return None
-    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=f"subscriptions/{folder}")
+    success = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder=folder_path)
     if not success:
         return None
-    github_upload_file(f"{filename}.type", "custom", folder=f"subscriptions/{folder}")
+    github_upload_file(f"{filename}.type", "custom", folder=folder_path)
     
-    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
-
-def ensure_folder(folder_path):
-    gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
-    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
+    return f"{RAW_BASE}/{folder_path}/{filename}.txt?t={int(time.time())}"
 
 def monitor_custom_payment(chat_id, user_id):
     start_time = time.time()
@@ -467,152 +453,48 @@ def monitor_custom_payment(chat_id, user_id):
     bot.send_message(chat_id, "⏰ Время ожидания оплаты истекло")
     user_vless_links.pop(user_id, None)
 
-# ==================== РАСШИРЕННЫЕ КНОПКИ ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'locations')
-def locations_info(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📖 Читать статью о локациях", url="https://teletype.in/@ylvv/location"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    
-    caption = (
-        "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
-        "🌍 **Для каких задач подходят разные локации:**\n\n"
-        "🇳🇱 **Нидерланды (NL)** — лучший выбор для стриминга YouTube, Twitch, Netflix. Низкая задержка.\n\n"
-        "🇩🇪 **Германия (DE)** — отлично подходит для онлайн-игр (CS2, Dota 2, Valorant). Стабильный пинг.\n\n"
-        "🇫🇮 **Финляндия (FI)** — хорош для работы с торрентами и файлообменниками. Высокая скорость.\n\n"
-        "🇵🇱 **Польша (PL)** — оптимальное соотношение скорости и стабильности. Подходит для всего.\n\n"
-        "🇱🇻 **Латвия (LV)** — хороший выбор для обхода geo-блокировок.\n\n"
-        "🇨🇿 **Чехия (CZ)** — стабильное соединение для повседневного серфинга.\n\n"
-        "🇺🇸 **США (US)** — нужен для доступа к американским сервисам (HBO Max, Hulu, Disney+).\n\n"
-        "🇷🇺 **Россия (RU)** — максимальная скорость внутри РФ, обход блокировок.\n\n"
-        "💡 **Совет:** Если один сервер работает медленно — переключитесь на другой в приложении!\n\n"
-        "👇 **Подробнее в нашей статье**"
-    )
-    bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'privacy_policy')
-def privacy_policy(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📄 Читать полную политику", url="https://teletype.in/@ylvv/politica"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    
-    caption = (
-        "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
-        "🔒 **Какие данные собираются:**\n"
-        "• Ваш Telegram ID (для идентификации)\n"
-        "• История платежей (для отслеживания подписки)\n"
-        "• Данные о трафике (обезличенная статистика)\n\n"
-        "🛡️ **Как мы используем данные:**\n"
-        "• Только для работы сервиса VPN\n"
-        "• Никакой передачи третьим лицам\n"
-        "• Логи не хранятся (No-logs policy)\n\n"
-        "🔐 **Ваши права:**\n"
-        "• Запрос на удаление данных\n"
-        "• Отказ от обработки персональных данных\n"
-        "• Получение копии ваших данных\n\n"
-        "⏱️ **Срок хранения:**\n"
-        "• Данные хранятся до окончания подписки + 30 дней\n\n"
-        "👇 **Полная версия по ссылке ниже**"
-    )
-    bot.send_message(call.message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'support')
-def support_callback(call):
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
-    keyboard.add(InlineKeyboardButton("📖 FAQ", url="https://teletype.in/@ylvv/faq"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    
-    caption = (
-        "🛠️ **ПОДДЕРЖКА**\n\n"
-        "📌 **Частые вопросы:**\n\n"
-        "❓ **Не подключается VPN?**\n"
-        "→ Удалите старую подписку и добавьте заново из профиля\n\n"
-        "❓ **Маленькая скорость?**\n"
-        "→ Попробуйте переключиться на другой сервер в приложении\n\n"
-        "❓ **Когда заканчивается подписка?**\n"
-        "→ Зайдите в «Личный кабинет» — там указана дата\n\n"
-        "❓ **Как продлить подписку?**\n"
-        "→ Нажмите «Купить VPN» и выберите период\n\n"
-        "❓ **Не пришла ссылка после оплаты?**\n"
-        "→ Проверьте профиль — ссылка там\n\n"
-        "⏰ **Время ответа:**\n"
-        "• До 12 часов в рабочие дни\n"
-        "• Срочные вопросы — быстрее\n\n"
-        "📩 **Свяжитесь с нами по кнопке ниже**"
-    )
-    bot.send_message(call.message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-
-def setup_main_menu_button():
-    try:
-        bot.set_my_commands([
-            BotCommand("start", "🏠 Главное меню"),
-            BotCommand("profile", "🛡️ Личный кабинет"),
-            BotCommand("buy", "💰 Купить VPN"),
-            BotCommand("trial", "🎁 Пробный период"),
-            BotCommand("support", "🛠️ Поддержка"),
-            BotCommand("locations", "📍 Локации"),
-            BotCommand("privacy", "📚 Политика"),
-            BotCommand("custom_config", "⚙️ Собрать конфиг"),
-        ])
-    except:
-        pass
-
-# ==================== КОМАНДЫ ДЛЯ КНОПОК ====================
-@bot.message_handler(commands=['locations'])
-@require_subscription
-def locations_command(message):
-    locations_info(message)
-
-@bot.message_handler(commands=['privacy'])
-@require_subscription
-def privacy_command(message):
-    privacy_policy(message)
-
-@bot.message_handler(commands=['custom_config'])
-@require_subscription
-def custom_config_command(message):
-    custom_config_start(message)
-
 # ==================== ОСНОВНЫЕ КОМАНДЫ ====================
 @bot.message_handler(commands=['start'])
 @require_subscription
 def start_command(message):
     save_user(message.from_user.id)
     
+    # Отправляем информацию админу о новом пользователе
+    try:
+        bot.send_message(YOUR_ADMIN_ID, f"🆕 **НОВЫЙ ПОЛЬЗОВАТЕЛЬ!**\n\n🆔 `{message.from_user.id}`\n👤 {message.from_user.first_name or '❌'}\n📛 @{message.from_user.username or '❌'}", parse_mode='Markdown')
+    except:
+        pass
+    
+    # Клавиатура
     keyboard = InlineKeyboardMarkup()
     
-    # 🔵 СИНЯЯ КНОПКА ЛИЧНОГО КАБИНЕТА (на всю ширину, открывает WebApp)
-    keyboard.add(InlineKeyboardButton(
-        "🔵 🛡️ ЛИЧНЫЙ КАБИНЕТ", 
-        web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/docs/cabinet.html?user_id={message.from_user.id}")
-    ))
+    # 🔵 ЛИЧНЫЙ КАБИНЕТ — ИСПРАВЛЕННАЯ ССЫЛКА!
+    cabinet_url = f"{CABINET_URL_BASE}?user_id={message.from_user.id}"
+    keyboard.add(InlineKeyboardButton("🔵 🛡️ ЛИЧНЫЙ КАБИНЕТ", web_app=WebAppInfo(url=cabinet_url)))
     
-    # 🟢 Зелёная кнопка Купить VPN
+    # 🟢 КУПИТЬ VPN
     keyboard.add(InlineKeyboardButton("🟢 💰 КУПИТЬ VPN", callback_data="buy_menu"))
     
-    # Третья строка - Пробный период и Поддержка
+    # Строка с пробным периодом и поддержкой
     keyboard.row(
         InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
         InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     )
     
-    # Четвёртая строка - Канал и Инструкция
+    # Строка с каналом и инструкцией
+    instructions_url = f"{INSTRUCTIONS_URL_BASE}?user_id={message.from_user.id}"
     keyboard.row(
         InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL),
-        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
+        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=instructions_url))
     )
     
-    # Пятая строка - Локации и Политика
+    # Локации и политика
     keyboard.row(
         InlineKeyboardButton("📍 Локации", callback_data="locations"),
         InlineKeyboardButton("📚 Политика", callback_data="privacy_policy")
     )
     
-    # Шестая строка - Соглашение и Собрать конфиг
+    # Соглашение и собрать конфиг
     keyboard.row(
         InlineKeyboardButton("📖 Соглашение", url="https://teletype.in/@ylvv/editor/folwixxxvpn"),
         InlineKeyboardButton("⚙️ Собрать конфиг", callback_data="custom_config")
@@ -637,6 +519,7 @@ def start_command(message):
         "💡 **Совет:** Если один сервер работает медленно — переключитесь на другой.\n\n"
         "👇 Выберите действие"
     )
+    
     try:
         bot.send_photo(message.chat.id, BANNER_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     except:
@@ -817,6 +700,64 @@ def refresh_config_command(message):
     else:
         bot.reply_to(message, "❌ Ошибка при обновлении")
 
+@bot.message_handler(commands=['locations'])
+@require_subscription
+def locations_command(message):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("📖 Читать статью о локациях", url="https://teletype.in/@ylvv/location"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
+    caption = (
+        "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
+        "🌍 **Для каких задач подходят разные локации:**\n\n"
+        "🇳🇱 **Нидерланды (NL)** — лучший выбор для стриминга YouTube, Twitch, Netflix. Низкая задержка.\n\n"
+        "🇩🇪 **Германия (DE)** — отлично подходит для онлайн-игр (CS2, Dota 2, Valorant). Стабильный пинг.\n\n"
+        "🇫🇮 **Финляндия (FI)** — хорош для работы с торрентами и файлообменниками. Высокая скорость.\n\n"
+        "🇵🇱 **Польша (PL)** — оптимальное соотношение скорости и стабильности. Подходит для всего.\n\n"
+        "🇱🇻 **Латвия (LV)** — хороший выбор для обхода geo-блокировок.\n\n"
+        "🇨🇿 **Чехия (CZ)** — стабильное соединение для повседневного серфинга.\n\n"
+        "🇺🇸 **США (US)** — нужен для доступа к американским сервисам (HBO Max, Hulu, Disney+).\n\n"
+        "🇷🇺 **Россия (RU)** — максимальная скорость внутри РФ, обход блокировок.\n\n"
+        "💡 **Совет:** Если один сервер работает медленно — переключитесь на другой в приложении!\n\n"
+        "👇 **Подробнее в нашей статье**"
+    )
+    try:
+        bot.send_photo(message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
+    except:
+        bot.send_message(message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
+
+@bot.message_handler(commands=['privacy'])
+@require_subscription
+def privacy_command(message):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("📄 Читать полную политику", url="https://teletype.in/@ylvv/politica"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
+    caption = (
+        "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
+        "🔒 **Какие данные собираются:**\n"
+        "• Ваш Telegram ID (для идентификации)\n"
+        "• История платежей (для отслеживания подписки)\n"
+        "• Данные о трафике (обезличенная статистика)\n\n"
+        "🛡️ **Как мы используем данные:**\n"
+        "• Только для работы сервиса VPN\n"
+        "• Никакой передачи третьим лицам\n"
+        "• Логи не хранятся (No-logs policy)\n\n"
+        "🔐 **Ваши права:**\n"
+        "• Запрос на удаление данных\n"
+        "• Отказ от обработки персональных данных\n"
+        "• Получение копии ваших данных\n\n"
+        "⏱️ **Срок хранения:**\n"
+        "• Данные хранятся до окончания подписки + 30 дней\n\n"
+        "👇 **Полная версия по ссылке ниже**"
+    )
+    bot.send_message(message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
+
+@bot.message_handler(commands=['custom_config'])
+@require_subscription
+def custom_config_command(message):
+    custom_config_start(message)
+
 # ==================== АДМИН КОМАНДЫ ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
@@ -850,7 +791,7 @@ def users_count(message):
     users = get_all_users()
     bot.reply_to(message, f"👥 Всего пользователей: {len(users)}")
 
-# ==================== ОПЛАТА БАЛАНСОМ ====================
+# ==================== ОПЛАТА БАЛАНСОМ И ДРУГИЕ CALLBACK ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
@@ -894,9 +835,7 @@ def handle_balance_payment(call):
         update_balance(user_id, amount)
         bot.edit_message_text(
             call.message.chat.id,
-            "❌ **Ошибка при создании подписки!**\n\n"
-            "Средства возвращены на баланс.\n"
-            "Попробуйте позже или обратитесь в поддержку.",
+            "❌ **Ошибка при создании подписки!**\n\nСредства возвращены на баланс.",
             parse_mode='Markdown'
         )
         bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
@@ -945,23 +884,6 @@ def cancel_payment(call):
     bot.edit_message_text("❌ Оплата отменена", call.message.chat.id, call.message.message_id)
     bot.answer_callback_query(call.id)
 
-# ==================== CALLBACKИ НАВИГАЦИИ ====================
-@bot.callback_query_handler(func=lambda call: call.data == 'support')
-def support(call):
-    support_command(call.message)
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == 'profile')
-def profile(call):
-    class FakeMessage:
-        def __init__(self, user_id, chat_id):
-            self.from_user = type('obj', (object,), {'id': user_id})()
-            self.chat = type('obj', (object,), {'id': chat_id})()
-            self.id = None
-    fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
-    profile_command(fake_msg)
-    bot.answer_callback_query(call.id)
-
 @bot.callback_query_handler(func=lambda call: call.data == 'refresh_config_profile')
 def refresh_profile(call):
     class FakeMessage:
@@ -988,14 +910,36 @@ def back_main(call):
     start_command(call.message)
     bot.answer_callback_query(call.id)
 
-def send_user_info_to_admin(message):
-    save_user(message.from_user.id)
-    try:
-        bot.send_message(YOUR_ADMIN_ID, f"🆕 **НОВЫЙ ПОЛЬЗОВАТЕЛЬ!**\n\n🆔 `{message.from_user.id}`\n👤 {message.from_user.first_name or '❌'}\n📛 @{message.from_user.username or '❌'}", parse_mode='Markdown')
-    except:
-        pass
+@bot.callback_query_handler(func=lambda call: call.data == 'support')
+def support(call):
+    support_command(call.message)
+    bot.answer_callback_query(call.id)
 
-# ==================== ВЕБ-СЕРВЕР ====================
+@bot.callback_query_handler(func=lambda call: call.data == 'privacy_policy')
+def privacy_policy_callback(call):
+    privacy_command(call.message)
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'locations')
+def locations_callback(call):
+    locations_command(call.message)
+    bot.answer_callback_query(call.id)
+
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def handle_pre_checkout(query):
+    bot.answer_pre_checkout_query(query.id, ok=True)
+
+@bot.message_handler(content_types=['successful_payment'])
+def handle_successful_payment(message):
+    parts = message.successful_payment.invoice_payload.split('_')
+    if len(parts) >= 3 and parts[0] == "stars":
+        days = int(parts[1])
+        link = create_subscription(message.from_user.id, days)
+        if link:
+            bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 {days} дней\n🌍 16 серверов")
+            bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
+
+# ==================== ВЕБ-СЕРВЕР ДЛЯ HEALTHCHECK ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -1006,26 +950,23 @@ def home():
 def health():
     return "OK", 200
 
-@app.route('/get_config/<int:user_id>')
-def get_user_config(user_id):
-    token = request.args.get('token')
-    if not token:
-        return {"error": "Missing token"}, 403
-    expiry_content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
-    if not expiry_content:
-        return {"error": "Subscription not found"}, 404
-    expiry_timestamp = int(expiry_content.strip())
-    if time.time() > expiry_timestamp:
-        return {"error": "Subscription expired"}, 403
-    if not verify_user_token(user_id, token, expiry_timestamp):
-        return {"error": "Invalid token"}, 403
-    content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.txt")
-    if not content:
-        return {"error": "Config not found"}, 404
-    return Response(content, mimetype='text/plain', headers={'Cache-Control': 'no-cache', 'Content-Disposition': f'inline; filename="config_{user_id}.txt"'})
-
 def run_web_server():
     app.run(host='0.0.0.0', port=10000, debug=False, use_reloader=False)
+
+def setup_main_menu_button():
+    try:
+        bot.set_my_commands([
+            BotCommand("start", "🏠 Главное меню"),
+            BotCommand("profile", "🛡️ Личный кабинет"),
+            BotCommand("buy", "💰 Купить VPN"),
+            BotCommand("trial", "🎁 Пробный период"),
+            BotCommand("support", "🛠️ Поддержка"),
+            BotCommand("locations", "📍 Локации"),
+            BotCommand("privacy", "📚 Политика"),
+            BotCommand("custom_config", "⚙️ Собрать конфиг"),
+        ])
+    except:
+        pass
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
@@ -1034,6 +975,7 @@ if __name__ == "__main__":
     print("✅ БОТ ЗАПУЩЕН!")
     print("📦 ALL-SUB — конфиг из all-sub.txt")
     print("💰 Цены: 30д = 2 TON / 200⭐ / 200💵")
+    print(f"🔗 Ссылка на личный кабинет: {CABINET_URL_BASE}")
     while True:
         try:
             bot.infinity_polling(timeout=60)
