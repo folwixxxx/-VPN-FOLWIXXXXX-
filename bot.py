@@ -132,16 +132,21 @@ def save_user(user_id):
     return False
 
 def get_template_content():
-    content = github_get_file_content("all-sub.txt")
-    if not content:
-        try:
-            resp = requests.get(f"{RAW_BASE}/all-sub.txt", timeout=10)
-            if resp.status_code == 200:
-                return resp.text
-        except:
-            pass
+    """Получает шаблон all-sub.txt из корня репозитория через RAW"""
+    try:
+        # Прямая ссылка на raw файл
+        url = f"{RAW_BASE}/all-sub.txt"
+        print(f"📥 Загружаем шаблон: {url}")
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            print(f"✅ Шаблон загружен, длина: {len(resp.text)} символов")
+            return resp.text
+        else:
+            print(f"❌ Ошибка загрузки шаблона: статус {resp.status_code}")
+            return None
+    except Exception as e:
+        print(f"❌ Исключение при загрузке шаблона: {e}")
         return None
-    return content
 
 def create_subscription(user_id, days):
     ensure_folder("subscriptions/all-sub")
@@ -152,6 +157,8 @@ def create_subscription(user_id, days):
     template = get_template_content()
     if not template:
         print(f"❌ Не удалось получить шаблон all-sub.txt")
+        # Отправляем админу ошибку
+        bot.send_message(YOUR_ADMIN_ID, f"❌ ОШИБКА: Не удалось получить шаблон all-sub.txt\nПроверь, что файл есть в репозитории: {RAW_BASE}/all-sub.txt")
         return None
     
     expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
@@ -177,6 +184,7 @@ def create_subscription(user_id, days):
     github_upload_file(f"{filename}.type", "all", f"subscriptions/{folder}")
     
     if not (success1 and success2):
+        print(f"❌ Ошибка загрузки: success1={success1}, success2={success2}")
         return None
     
     token = generate_user_token(user_id, expiry_timestamp)
