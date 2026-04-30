@@ -194,6 +194,20 @@ def get_user_subscription_info(user_id):
             return None, None, None
     return None, None, None
 
+def get_custom_subscription_info(user_id):
+    content = github_get_file_content(f"subscriptions/custom-sub/user_{user_id}.expiry")
+    if content:
+        try:
+            ts = int(content.strip())
+            now = int(time.time())
+            if now > ts:
+                return None, None, None
+            custom_link = f"{RAW_BASE}/subscriptions/custom-sub/user_{user_id}.txt?t={int(time.time())}"
+            return True, custom_link
+        except:
+            return False, None
+    return False, None
+
 # ==================== БАЛАНС ====================
 def get_balance(user_id):
     content = github_get_file_content(f"balances/balance_{user_id}.json")
@@ -407,6 +421,7 @@ def custom_check_payment(call):
     bot.answer_callback_query(call.id)
 
 def create_custom_subscription(user_id, vless_links):
+    ensure_folder("subscriptions/custom-sub")
     filename = f"user_{user_id}"
     folder = "custom-sub"
     
@@ -429,6 +444,12 @@ def create_custom_subscription(user_id, vless_links):
     
     return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?t={int(time.time())}"
 
+def ensure_folder(folder_path):
+    gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
+    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
+
 def monitor_custom_payment(chat_id, user_id):
     start_time = time.time()
     while time.time() - start_time < 600:
@@ -446,21 +467,83 @@ def monitor_custom_payment(chat_id, user_id):
     bot.send_message(chat_id, "⏰ Время ожидания оплаты истекло")
     user_vless_links.pop(user_id, None)
 
-# ==================== КНОПКИ ====================
+# ==================== РАСШИРЕННЫЕ КНОПКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
 def locations_info(call):
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📖 Читать статью", url="https://teletype.in/@ylvv/location"))
+    keyboard.add(InlineKeyboardButton("📖 Читать статью о локациях", url="https://teletype.in/@ylvv/location"))
     keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption="📍 **ЛОКАЦИИ**\n\nВыбирайте сервер под свои задачи!", reply_markup=keyboard, parse_mode='Markdown')
+    
+    caption = (
+        "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
+        "🌍 **Для каких задач подходят разные локации:**\n\n"
+        "🇳🇱 **Нидерланды (NL)** — лучший выбор для стриминга YouTube, Twitch, Netflix. Низкая задержка.\n\n"
+        "🇩🇪 **Германия (DE)** — отлично подходит для онлайн-игр (CS2, Dota 2, Valorant). Стабильный пинг.\n\n"
+        "🇫🇮 **Финляндия (FI)** — хорош для работы с торрентами и файлообменниками. Высокая скорость.\n\n"
+        "🇵🇱 **Польша (PL)** — оптимальное соотношение скорости и стабильности. Подходит для всего.\n\n"
+        "🇱🇻 **Латвия (LV)** — хороший выбор для обхода geo-блокировок.\n\n"
+        "🇨🇿 **Чехия (CZ)** — стабильное соединение для повседневного серфинга.\n\n"
+        "🇺🇸 **США (US)** — нужен для доступа к американским сервисам (HBO Max, Hulu, Disney+).\n\n"
+        "🇷🇺 **Россия (RU)** — максимальная скорость внутри РФ, обход блокировок.\n\n"
+        "💡 **Совет:** Если один сервер работает медленно — переключитесь на другой в приложении!\n\n"
+        "👇 **Подробнее в нашей статье**"
+    )
+    bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'privacy_policy')
 def privacy_policy(call):
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📄 Читать политику", url="https://teletype.in/@ylvv/politica"))
+    keyboard.add(InlineKeyboardButton("📄 Читать полную политику", url="https://teletype.in/@ylvv/politica"))
     keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    bot.send_message(call.message.chat.id, "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\nМы заботимся о ваших данных.", reply_markup=keyboard, parse_mode='Markdown')
+    
+    caption = (
+        "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
+        "🔒 **Какие данные собираются:**\n"
+        "• Ваш Telegram ID (для идентификации)\n"
+        "• История платежей (для отслеживания подписки)\n"
+        "• Данные о трафике (обезличенная статистика)\n\n"
+        "🛡️ **Как мы используем данные:**\n"
+        "• Только для работы сервиса VPN\n"
+        "• Никакой передачи третьим лицам\n"
+        "• Логи не хранятся (No-logs policy)\n\n"
+        "🔐 **Ваши права:**\n"
+        "• Запрос на удаление данных\n"
+        "• Отказ от обработки персональных данных\n"
+        "• Получение копии ваших данных\n\n"
+        "⏱️ **Срок хранения:**\n"
+        "• Данные хранятся до окончания подписки + 30 дней\n\n"
+        "👇 **Полная версия по ссылке ниже**"
+    )
+    bot.send_message(call.message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'support')
+def support_callback(call):
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
+    keyboard.add(InlineKeyboardButton("📖 FAQ", url="https://teletype.in/@ylvv/faq"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    
+    caption = (
+        "🛠️ **ПОДДЕРЖКА**\n\n"
+        "📌 **Частые вопросы:**\n\n"
+        "❓ **Не подключается VPN?**\n"
+        "→ Удалите старую подписку и добавьте заново из профиля\n\n"
+        "❓ **Маленькая скорость?**\n"
+        "→ Попробуйте переключиться на другой сервер в приложении\n\n"
+        "❓ **Когда заканчивается подписка?**\n"
+        "→ Зайдите в «Личный кабинет» — там указана дата\n\n"
+        "❓ **Как продлить подписку?**\n"
+        "→ Нажмите «Купить VPN» и выберите период\n\n"
+        "❓ **Не пришла ссылка после оплаты?**\n"
+        "→ Проверьте профиль — ссылка там\n\n"
+        "⏰ **Время ответа:**\n"
+        "• До 12 часов в рабочие дни\n"
+        "• Срочные вопросы — быстрее\n\n"
+        "📩 **Свяжитесь с нами по кнопке ниже**"
+    )
+    bot.send_message(call.message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
 def setup_main_menu_button():
@@ -471,9 +554,28 @@ def setup_main_menu_button():
             BotCommand("buy", "💰 Купить VPN"),
             BotCommand("trial", "🎁 Пробный период"),
             BotCommand("support", "🛠️ Поддержка"),
+            BotCommand("locations", "📍 Локации"),
+            BotCommand("privacy", "📚 Политика"),
+            BotCommand("custom_config", "⚙️ Собрать конфиг"),
         ])
     except:
         pass
+
+# ==================== КОМАНДЫ ДЛЯ КНОПОК ====================
+@bot.message_handler(commands=['locations'])
+@require_subscription
+def locations_command(message):
+    locations_info(message)
+
+@bot.message_handler(commands=['privacy'])
+@require_subscription
+def privacy_command(message):
+    privacy_policy(message)
+
+@bot.message_handler(commands=['custom_config'])
+@require_subscription
+def custom_config_command(message):
+    custom_config_start(message)
 
 # ==================== ОСНОВНЫЕ КОМАНДЫ ====================
 @bot.message_handler(commands=['start'])
@@ -515,18 +617,21 @@ def start_command(message):
     
     caption = (
         "🛡️ **FOLWIXXX VPN**\n\n"
-        "⚡ Быстрые серверы\n"
-        "🔓 Полный обход блокировок\n"
-        "📡 Безлимитный трафик\n\n"
+        "⚡ **Быстрые серверы** — 16 локаций по всему миру\n"
+        "🔓 **Полный обход блокировок** — работаем даже там, где другие не справляются\n"
+        "📡 **Безлимитный трафик** — никаких ограничений по скорости и объёму\n"
+        "🎮 **Идеально для игр** — низкий пинг на всех серверах\n"
+        "📺 **Стриминг без ограничений** — YouTube, Netflix, Twitch\n\n"
         "**🔷 ALL-SUB — ЕДИНЫЙ ТАРИФ**\n"
         "🌍 Все серверы в одном конфиге\n"
-        "🎮 Выбирайте сервер в приложении\n\n"
+        "🎮 Выбирайте сервер в приложении v2rayNG\n\n"
         "💰 **Цены:**\n"
         "• 30 дней — 2 TON / 200⭐ / 200💵\n"
         "• 60 дней — 3.5 TON / 350⭐ / 350💵\n"
         "• 90 дней — 5 TON / 500⭐ / 500💵\n\n"
         "🎁 **Пробный период — 1 день бесплатно!**\n\n"
         "⚙️ **Собрать свой конфиг** — 50⭐ / 0.5 TON / 50💵 (бессрочно)\n\n"
+        "💡 **Совет:** Если один сервер работает медленно — переключитесь на другой.\n\n"
         "👇 Выберите действие"
     )
     try:
@@ -540,27 +645,47 @@ def profile_command(message):
     user_id = message.from_user.id
     balance = get_balance(user_id)
     days_left, expiry_date, link = get_user_subscription_info(user_id)
+    has_custom, custom_link = get_custom_subscription_info(user_id)
+    
     keyboard = InlineKeyboardMarkup()
     if days_left:
         keyboard.add(InlineKeyboardButton("🔄 Обновить конфиг", callback_data="refresh_config_profile"))
+    if has_custom and custom_link:
+        keyboard.add(InlineKeyboardButton("📁 Мой кастомный конфиг", callback_data="custom_config_profile"))
     keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
     
     text = f"👤 **ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ**\n\n"
     text += f"🆔 ID: `{user_id}`\n"
     text += f"💰 Баланс: {balance} 💵\n"
     if days_left:
-        text += f"📦 **ALL-SUB** ✅ Активна\n"
+        text += f"\n📦 **ALL-SUB** ✅ Активна\n"
         text += f"📅 Осталось дней: {days_left}\n"
         text += f"📅 Действует до: `{expiry_date}`\n"
         text += f"🔗 Ссылка для v2rayNG:\n`{link}`\n\n"
-        text += f"📱 **Как выбрать сервер:**\n"
-        text += f"• Добавьте ссылку в v2rayNG\n"
-        text += f"• Нажмите на иконку профиля вверху\n"
-        text += f"• Выберите нужный сервер\n"
-        text += f"• Нажмите ▶️ для подключения"
     else:
-        text += "📅 Статус: ❌ **Нет активной подписки**\n\n💡 Используйте /buy для покупки"
+        text += "\n📅 Статус: ❌ **Нет активной подписки**\n\n💡 Используйте /buy для покупки\n"
+    
+    if has_custom and custom_link:
+        text += f"\n📁 **Кастомный конфиг** ✅ Активен (бессрочно)\n"
+        text += f"🔗 Ссылка:\n`{custom_link}`\n\n"
+    
+    text += f"📱 **Как выбрать сервер:**\n"
+    text += f"• Добавьте ссылку в v2rayNG\n"
+    text += f"• Нажмите на иконку профиля вверху\n"
+    text += f"• Выберите нужный сервер\n"
+    text += f"• Нажмите ▶️ для подключения"
+    
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+
+@bot.callback_query_handler(func=lambda call: call.data == 'custom_config_profile')
+def custom_config_profile(call):
+    user_id = call.from_user.id
+    has_custom, custom_link = get_custom_subscription_info(user_id)
+    if has_custom and custom_link:
+        bot.send_message(call.message.chat.id, f"📁 **ВАШ КАСТОМНЫЙ КОНФИГ**\n\n🔗 {custom_link}\n\n📅 Действует бессрочно\n⚙️ Создан из ваших серверов", parse_mode='Markdown')
+    else:
+        bot.send_message(call.message.chat.id, "❌ У вас нет кастомного конфига.\n\nИспользуйте «⚙️ Собрать конфиг» в главном меню", parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
 
 @bot.message_handler(commands=['buy'])
 @require_subscription
@@ -653,8 +778,28 @@ def trial_command(message):
 def support_command(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
+    keyboard.add(InlineKeyboardButton("📖 FAQ", url="https://teletype.in/@ylvv/faq"))
     keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    bot.send_message(message.chat.id, "🛠️ **ПОДДЕРЖКА**\n\nВозникли проблемы? Пишите!", reply_markup=keyboard, parse_mode='Markdown')
+    
+    caption = (
+        "🛠️ **ПОДДЕРЖКА**\n\n"
+        "📌 **Частые вопросы:**\n\n"
+        "❓ **Не подключается VPN?**\n"
+        "→ Удалите старую подписку и добавьте заново из профиля\n\n"
+        "❓ **Маленькая скорость?**\n"
+        "→ Попробуйте переключиться на другой сервер в приложении\n\n"
+        "❓ **Когда заканчивается подписка?**\n"
+        "→ Зайдите в «Личный кабинет» — там указана дата\n\n"
+        "❓ **Как продлить подписку?**\n"
+        "→ Нажмите «Купить VPN» и выберите период\n\n"
+        "❓ **Не пришла ссылка после оплаты?**\n"
+        "→ Проверьте профиль — ссылка там\n\n"
+        "⏰ **Время ответа:**\n"
+        "• До 12 часов в рабочие дни\n"
+        "• Срочные вопросы — быстрее\n\n"
+        "📩 **Свяжитесь с нами по кнопке ниже**"
+    )
+    bot.send_message(message.chat.id, caption, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['refresh_config'])
 @require_subscription
