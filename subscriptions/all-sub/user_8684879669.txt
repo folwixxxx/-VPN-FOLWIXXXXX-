@@ -1,9 +1,9 @@
-#subscription-userinfo: upload=0; download=0; total=0; expire=1780143725
+#subscription-userinfo: upload=0; download=0; total=0; expire=1780143850
 # profile-title: ALL-SUB 8684879669
 # profile-update-interval: 1440
-# expire: 2026-05-30 12:22:05
+# expire: 2026-05-30 12:24:10
 # days: 30
-# created: 2026-04-30 12:22:05
+# created: 2026-04-30 12:24:10
 
 #profile-title: FOLWIXXXX VPN / ULTRA-SUB 
 #profile-update-interval: 1
@@ -517,6 +517,6 @@ trojan://162534@217.60.248.94:8443?security=tls&sni=cchh2.pages.dev&insecure=1&a
 trojan://162534@43.165.190.11:42841?type=ws&host=cchh2.pages.dev&path=/%3Fed%3D2560&security=tls&sni=cchh2.pages.dev#🇧🇸%20Эщкерия%20%7C%20🔐%20[🏴BL]
 trojan://162534@5.223.56.239:8443?security=tls&sni=cchh2.pages.dev&insecure=1&allowInsecure=1&type=ws&host=cchh2.pages.dev&path=%2F%3Fed%3D2560%26https%3A%2F%2Ft.me%2FWangCai2%F0%9F%87%A8%F0%9F%87%B3#🇧🇸%20Эщкерия%20%7C%20🔐%20[🏴BL]
 
-# Created: 2026-04-30 12:22:05
-# Expires: 2026-05-30 12:22:05
+# Created: 2026-04-30 12:24:10
+# Expires: 2026-05-30 12:24:10
 # Days: 30
