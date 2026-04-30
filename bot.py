@@ -15,6 +15,7 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
+API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
@@ -75,7 +76,7 @@ def verify_user_token(user_id, token, expiry_timestamp):
 
 def github_upload_file(filename, content, folder=""):
     full_path = f"{folder}/{filename}" if folder else filename
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
+    url = f"{API_BASE}/contents/{full_path}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
@@ -91,7 +92,7 @@ def github_upload_file(filename, content, folder=""):
     return result.status_code in [200, 201]
 
 def github_get_file_content(filepath):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
+    url = f"{API_BASE}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         resp = requests.get(url, headers=headers)
@@ -124,17 +125,15 @@ def get_template_content():
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             return resp.text
-        bot.send_message(YOUR_ADMIN_ID, f"❌ Не могу загрузить all-sub.txt\nURL: {url}\nСтатус: {resp.status_code}")
         return None
-    except Exception as e:
-        bot.send_message(YOUR_ADMIN_ID, f"❌ Ошибка загрузки all-sub.txt: {e}")
+    except:
         return None
 
 def create_subscription(user_id, days):
-    # Сначала создаём папку, если её нет
+    # Создаём папку
     folder = "all-sub"
     folder_path = f"subscriptions/{folder}"
-    gitkeep_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{folder_path}/.gitkeep"
+    gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
     requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
@@ -190,26 +189,25 @@ def get_user_subscription_info(user_id):
             return None, None, None
     return None, None, None
 
+# ==================== БАЛАНС (ПРОСТОЕ РЕШЕНИЕ) ====================
 def get_balance(user_id):
-    content = github_get_file_content(f"balances/balance_{user_id}.json")
-    if not content:
-        return 0
     try:
-        return json.loads(content).get("balance", 0)
+        resp = requests.get(f"{RAW_BASE}/balances/balance_{user_id}.json", timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("balance", 0)
     except:
-        return 0
+        pass
+    return 0
+
+def write_balance(user_id, new_balance):
+    data = {"user_id": user_id, "balance": new_balance, "updated": datetime.now().isoformat()}
+    return github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), "balances")
 
 def update_balance(user_id, amount):
-    # Создаём папку balances если её нет
-    gitkeep_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/balances/.gitkeep"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    gitkeep_data = {"message": "Create balances folder", "content": base64.b64encode(b"").decode('utf-8')}
-    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
-    
     current = get_balance(user_id)
     new_balance = current + amount
-    data = {"user_id": user_id, "balance": new_balance, "updated": datetime.now().isoformat()}
-    ok = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), "balances")
+    ok = write_balance(user_id, new_balance)
     return ok, new_balance
 
 def deduct_balance(user_id, amount):
@@ -217,8 +215,7 @@ def deduct_balance(user_id, amount):
     if current < amount:
         return False, current
     new_balance = current - amount
-    data = {"user_id": user_id, "balance": new_balance, "updated": datetime.now().isoformat()}
-    ok = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), "balances")
+    ok = write_balance(user_id, new_balance)
     if ok:
         return True, new_balance
     return False, current
@@ -313,7 +310,7 @@ def start_command(message):
     keyboard.row(InlineKeyboardButton("🎁 Пробный", callback_data="trial"), InlineKeyboardButton("🛠️ Поддержка", callback_data="support"))
     keyboard.row(InlineKeyboardButton("⚠️ Канал", url=CHANNEL_URL), InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")))
     keyboard.row(InlineKeyboardButton("📍 Локации", callback_data="locations"), InlineKeyboardButton("📚 Политика", callback_data="privacy_policy"))
-    caption = ("💻 **FOLWIXXX VPN**\n\n📦 ALL-SUB\n🌍 16 серверов\n💰 30д: 2 TON / 200⭐ / 200💵\n🎁 Пробный 1 день")
+    caption = ("💻 **FOLWIXXX VPN**\n\n📦 ALL-SUB\n🌍 Все серверы\n💰 30д: 2 TON / 200⭐ / 200💵\n🎁 Пробный 1 день")
     try:
         bot.send_photo(message.chat.id, BANNER_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     except:
@@ -404,6 +401,7 @@ def refresh_config_command(message):
     else:
         bot.reply_to(message, "❌ Ошибка")
 
+# ==================== АДМИН ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
     if message.from_user.id != YOUR_ADMIN_ID:
@@ -434,6 +432,7 @@ def users_count(message):
     users = get_all_users()
     bot.reply_to(message, f"👥 Пользователей: {len(users)}")
 
+# ==================== ОПЛАТА БАЛАНСОМ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
@@ -499,6 +498,7 @@ def cancel_payment(call):
     bot.edit_message_text("❌ Отменено", call.message.chat.id, call.message.message_id)
     bot.answer_callback_query(call.id)
 
+# ==================== CALLBACKИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'support')
 def support(call):
     support_command(call.message)
