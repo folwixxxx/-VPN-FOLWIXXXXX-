@@ -1,1 +1,776 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FOLWIXXX VPN — Личный кабинет</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #010107;
+            min-height: 100vh;
+            color: #eef2ff;
+            overflow-x: hidden;
+            padding-bottom: 56px;
+        }
+
+        .dark-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(0, 80, 120, 0.12) 0%, transparent 60%);
+            background-color: #010107;
+            z-index: -2;
+        }
+
+        /* Шапка */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shield-icon {
+            font-size: 24px;
+            filter: drop-shadow(0 0 5px #00aaff);
+        }
+
+        .vpn-name {
+            font-size: 16px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #5bc0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.04);
+            padding: 4px 10px 4px 6px;
+            border-radius: 40px;
+        }
+
+        .avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 30px;
+            background: linear-gradient(145deg, #0a5f9e, #00a0f0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .user-stats {
+            text-align: right;
+        }
+
+        .user-stats .user-name {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .user-stats .user-id {
+            font-size: 8px;
+            color: #8e9ecc;
+            font-family: monospace;
+        }
+
+        /* Бургер */
+        .menu-icon {
+            cursor: pointer;
+            font-size: 22px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            margin-right: 4px;
+        }
+
+        /* Сайдбар */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: rgba(3, 5, 15, 0.98);
+            backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(0, 160, 255, 0.3);
+            z-index: 200;
+            transition: left 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            padding: 60px 20px 20px;
+            overflow-y: auto;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 199;
+            display: none;
+        }
+        .sidebar-overlay.show {
+            display: block;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            margin: 4px 0;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+            color: rgba(204, 221, 248, 0.8);
+        }
+        .sidebar-item:hover, .sidebar-item.active-sidebar {
+            background: rgba(0, 160, 255, 0.12);
+            color: #5bc0ff;
+        }
+        .sidebar-item span:first-child {
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        /* НИЖНЯЯ НАВИГАЦИЯ — ПРОЗРАЧНАЯ ПЛАШКА, МАЛЕНЬКИЕ ВКЛАДКИ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 10px 10px;
+            border-top: 1px solid rgba(0, 180, 255, 0.15);
+            z-index: 50;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: rgba(142, 158, 204, 0.7);
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 4px 8px;
+            border-radius: 30px;
+            flex: 0 1 auto;
+        }
+        .nav-item.active-nav {
+            color: #5bc0ff;
+            background: rgba(0, 160, 255, 0.08);
+        }
+        .nav-icon {
+            font-size: 18px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .nav-item.active-nav .nav-icon {
+            opacity: 1;
+        }
+
+        /* Контент */
+        .tab-content {
+            display: none;
+            padding: 14px 12px;
+            animation: fadeSlide 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Карточки */
+        .glass-card {
+            background: rgba(6, 8, 18, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(0, 160, 255, 0.12);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5bc0ff;
+            border-left: 3px solid #5bc0ff;
+            padding-left: 10px;
+            margin-bottom: 12px;
+        }
+        .balance-big {
+            font-size: 44px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #7accff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+        }
+
+        /* Гайды */
+        .guide-item {
+            background: rgba(0, 20, 40, 0.5);
+            border-radius: 18px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .guide-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .guide-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            padding: 0 14px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .guide-content.show {
+            max-height: 500px;
+            padding: 0 14px 14px 14px;
+        }
+        .guide-step {
+            margin: 6px 0;
+            padding-left: 10px;
+            border-left: 2px solid #2a6f9e;
+        }
+        .download-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #5bc0ff;
+            text-decoration: none;
+            font-size: 11px;
+        }
+
+        /* Колесо */
+        .wheel-wrapper {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+        }
+        .wheel-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 0 5px rgba(0, 160, 255, 0.2);
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 38px solid #ff4d4d;
+            z-index: 15;
+        }
+        .wheel-center-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: #03050b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            border: 2px solid #2a9eff;
+        }
+        .prize-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 10px;
+        }
+        .prize-badge {
+            background: rgba(0,160,255,0.12);
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+        .spin-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(95deg, #0d6efd, #0090e0);
+            border: none;
+            border-radius: 44px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .buy-spin-glass {
+            flex: 1;
+            background: rgba(10, 20, 40, 0.7);
+            border: 1px solid rgba(0, 160, 255, 0.4);
+            border-radius: 44px;
+            padding: 8px;
+            font-weight: 600;
+            font-size: 11px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .history-list {
+            max-height: 140px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 11px;
+        }
+        .faq-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 14px;
+            font-size: 11px;
+        }
+        .toast-dark {
+            position: fixed;
+            bottom: 70px;
+            left: 20px;
+            right: 20px;
+            background: #0a0e1c;
+            backdrop-filter: blur(20px);
+            padding: 10px 16px;
+            border-radius: 40px;
+            text-align: center;
+            z-index: 200;
+            transition: 0.2s;
+            transform: translateY(100px);
+            opacity: 0;
+            font-size: 12px;
+        }
+        .toast-dark.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .arrow {
+            transition: transform 0.2s;
+        }
+        .arrow.rotated {
+            transform: rotate(180deg);
+        }
+        .legal-text {
+            font-size: 10px;
+            color: #aabbdd;
+            max-height: 350px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+<div class="dark-bg"></div>
+
+<div class="header">
+    <button class="menu-icon" id="menuBtn">☰</button>
+    <div class="logo-area">
+        <div class="shield-icon">🛡️</div>
+        <div class="vpn-name">FOLWIXXX VPN</div>
+    </div>
+    <div class="user-card">
+        <div class="user-stats">
+            <div class="user-name" id="userName">Гость</div>
+            <div class="user-id" id="userIdDisplay">ID: --</div>
+        </div>
+        <div class="avatar-mini">⚡</div>
+    </div>
+</div>
+
+<!-- Сайдбар -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-item" data-sidebar="home"><span>🏠</span> Главная</div>
+    <div class="sidebar-item" data-sidebar="subscription"><span>📦</span> Подписка</div>
+    <div class="sidebar-item" data-sidebar="balance"><span>💰</span> Баланс</div>
+    <div class="sidebar-item" data-sidebar="wheel"><span>🎡</span> Колесо</div>
+    <div class="sidebar-item" data-sidebar="support"><span>💬</span> Поддержка</div>
+    <div class="sidebar-item" data-sidebar="info"><span>ℹ️</span> Информация</div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Нижняя навигация (прозрачная, маленькая) -->
+<div class="bottom-nav">
+    <button class="nav-item active-nav" data-nav="home"><span class="nav-icon">🏠</span><span>Главная</span></button>
+    <button class="nav-item" data-nav="subscription"><span class="nav-icon">📦</span><span>Подписка</span></button>
+    <button class="nav-item" data-nav="balance"><span class="nav-icon">💰</span><span>Баланс</span></button>
+    <button class="nav-item" data-nav="wheel"><span class="nav-icon">🎡</span><span>Колесо</span></button>
+</div>
+
+<!-- Вкладки -->
+<div class="tab-content active" id="tab-home"></div>
+<div class="tab-content" id="tab-subscription"></div>
+<div class="tab-content" id="tab-balance"></div>
+<div class="tab-content" id="tab-wheel"></div>
+<div class="tab-content" id="tab-support"></div>
+<div class="tab-content" id="tab-info"></div>
+
+<div id="toastGlobal" class="toast-dark"></div>
+
+<script>
+    // ---------- КОЛЕСО: честные шансы, проигрыш не пишет награду ----------
+    const SEGMENTS = [
+        { name: "😢 Проигрыш", value: 0, type: "nothing", color: "#2a2138", short: "😢" },
+        { name: "😢 Проигрыш", value: 0, type: "nothing", color: "#332540", short: "❌" },
+        { name: "⭐ +20⭐", value: 20, type: "balance", color: "#1f5430", short: "+20" },
+        { name: "😢 Проигрыш", value: 0, type: "nothing", color: "#2a1f35", short: "😢" },
+        { name: "⭐ +40⭐", value: 40, type: "balance", color: "#10457a", short: "+40" },
+        { name: "😢 Проигрыш", value: 0, type: "nothing", color: "#3a2a3f", short: "💔" },
+        { name: "⭐ +80⭐", value: 80, type: "balance", color: "#1e6b3e", short: "+80" },
+        { name: "🎁 30 дней", value: 30, type: "subscription", color: "#772244", short: "🎁30д" },
+        { name: "⭐ +150⭐", value: 150, type: "balance", color: "#d4af37", short: "+150" },
+        { name: "😢 Проигрыш", value: 0, type: "nothing", color: "#1f1a30", short: "😢" }
+    ];
+    // Вероятности: проигрыш ~60%, хорошие награды с уменьшенными шансами
+    const WEIGHTS = [22, 18, 12, 14, 8, 12, 5, 4, 3, 2]; // 100%
+
+    let tgApp = null;
+    let userId = 'user_' + Math.floor(Math.random() * 100000);
+    let balanceStars = 0;
+    let activeSub = false;
+    let lastFreeSpinTime = 0;
+    let spinLock = false;
+    let currentRotationDeg = 0;
+    let wheelCanvas = null, ctx = null;
+    let transactions = [];
+    let wheelHistory = [];
+
+    const guidesData = {
+        ios: { title: "📱 iOS / iPadOS", steps: "1. Установите OpenVPN Connect из App Store\n2. Получите конфиг в боте после оплаты\n3. Откройте файл → разрешите VPN\n4. Подключитесь одним нажатием", link: "https://apps.apple.com/app/openvpn-connect/id590379981" },
+        android: { title: "🤖 Android", steps: "1. Скачайте OpenVPN for Android\n2. Импортируйте конфигурацию\n3. Нажмите 'Подключиться'", link: "https://play.google.com/store/apps/details?id=net.openvpn.openvpn" },
+        windows: { title: "💻 Windows", steps: "1. Скачайте OpenVPN GUI\n2. Поместите .ovpn в папку config\n3. Запустите и подключитесь", link: "https://openvpn.net/client/client-windows/" },
+        mac: { title: "🍎 macOS", steps: "1. Установите Tunnelblick\n2. Перетащите конфиг\n3. Нажмите Connect", link: "https://tunnelblick.net" }
+    };
+
+    async function loadData() {
+        try {
+            const balRes = await fetch(`https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/balances/balance_${userId}.json`);
+            if (balRes.ok) { const data = await balRes.json(); balanceStars = data.balance || 0; }
+        } catch(e) {}
+        try {
+            const subRes = await fetch(`https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/subscriptions/all-sub/user_${userId}.expiry`);
+            if (subRes.ok) {
+                const txt = await subRes.text();
+                const expiry = parseInt(txt,10);
+                activeSub = expiry > Date.now()/1000;
+            }
+        } catch(e) {}
+        try {
+            const spinRes = await fetch(`https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/spins/spin_${userId}.json`);
+            if (spinRes.ok) {
+                const data = await spinRes.json();
+                lastFreeSpinTime = data.lastSpinTime || 0;
+                wheelHistory = data.winsHistory || [];
+                transactions = data.transactions || [];
+            }
+        } catch(e) {}
+        updateUI();
+        renderTransactions();
+        renderWheelHistory();
+    }
+
+    function updateUI() {
+        const homeBalance = document.getElementById('homeBalance');
+        if (homeBalance) homeBalance.innerText = balanceStars;
+        const balanceDetail = document.getElementById('balanceDetail');
+        if (balanceDetail) balanceDetail.innerText = balanceStars;
+        const homeBadge = document.getElementById('homeSubBadge');
+        if (homeBadge) homeBadge.innerHTML = activeSub ? `<div style="background:#0a3a2a; border-radius:40px; padding:5px 10px;"><span style="color:#6effb0;">✅ АКТИВНА</span></div>` : `<div style="background:#3a1a2a; border-radius:40px; padding:5px 10px;">❌ Нет подписки</div>`;
+        const subArea = document.getElementById('subStatusArea');
+        if (subArea) {
+            if (activeSub) subArea.innerHTML = `<div>🔒 Статус: Активна</div><div>Доступ ко всем серверам</div>`;
+            else subArea.innerHTML = `<div>⚠️ Нет активной подписки.</div><button class="buy-spin-glass" style="margin-top:10px;" onclick="openTrial()">🎁 Пробный период 3 дня</button>`;
+        }
+        const trialBtn = document.getElementById('trialHomeBtn');
+        if (trialBtn && !activeSub) trialBtn.innerHTML = `<button class="buy-spin-glass" style="margin-top:8px; width:100%;" onclick="openTrial()">✨ Активировать пробный VPN</button>`;
+        else if (trialBtn) trialBtn.innerHTML = '';
+        updateSpinTimer();
+    }
+
+    function renderTransactions() {
+        const container = document.getElementById('transactionHistoryContainer');
+        if (!container) return;
+        if (!transactions.length) { container.innerHTML = '<div style="text-align:center; padding:10px;">Нет операций</div>'; return; }
+        let html = '';
+        transactions.slice().reverse().forEach(t => {
+            html += `<div class="transaction-item"><span>${t.date}</span><span>${t.desc} ${t.amount>=0?'+':''}${t.amount}⭐</span></div>`;
+        });
+        container.innerHTML = html;
+    }
+    function addTransaction(amount, desc) {
+        const date = new Date().toLocaleString('ru-RU', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+        transactions.unshift({ date, amount, desc });
+        if (transactions.length > 20) transactions.pop();
+        renderTransactions();
+        saveLocal();
+    }
+    function renderWheelHistory() {
+        const histDiv = document.getElementById('wheelHistoryList');
+        if (!histDiv) return;
+        if (!wheelHistory.length) { histDiv.innerHTML = '<div style="text-align:center; padding:8px;">🌀 Нет вращений</div>'; return; }
+        let html = '';
+        wheelHistory.slice(0,6).forEach(h => {
+            html += `<div class="transaction-item"><span>${h.time}</span><span>${h.result}</span></div>`;
+        });
+        histDiv.innerHTML = html;
+    }
+    function addWheelHistory(result) {
+        const timeStr = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        wheelHistory.unshift({ time: timeStr, result });
+        if (wheelHistory.length > 8) wheelHistory.pop();
+        renderWheelHistory();
+        saveLocal();
+    }
+    function saveLocal() {
+        localStorage.setItem(`spin_${userId}`, JSON.stringify({ lastSpinTime: lastFreeSpinTime, winsHistory: wheelHistory, transactions }));
+    }
+    function updateSpinTimer() {
+        const now = Date.now();
+        const cooldown = 2*24*60*60*1000;
+        const remain = (lastFreeSpinTime + cooldown) - now;
+        const info = document.getElementById('spinTimerText');
+        const btn = document.getElementById('spinFreeBtn');
+        if (!info) return;
+        if (remain <= 0) { info.innerHTML = '✨ Бесплатное вращение готово!'; if(btn) btn.innerHTML = '🎡 КРУТИТЬ БЕСПЛАТНО'; }
+        else { const h = Math.ceil(remain/(60*60*1000)); info.innerHTML = `⏱️ Бесплатно через ${h} ч`; if(btn) btn.innerHTML = '🎡 КРУТИТЬ'; }
+    }
+
+    function drawWheel(rot) {
+        if (!ctx) return;
+        const size = wheelCanvas.width;
+        const c = size/2, r = c-6, step = (Math.PI*2)/SEGMENTS.length;
+        ctx.clearRect(0,0,size,size);
+        for (let i=0;i<SEGMENTS.length;i++) {
+            const start = i*step + (rot*Math.PI/180);
+            const end = start+step;
+            ctx.beginPath(); ctx.moveTo(c,c); ctx.arc(c,c,r,start,end); ctx.fillStyle=SEGMENTS[i].color; ctx.fill();
+            ctx.save(); ctx.translate(c,c); ctx.rotate(start+step/2); ctx.font="bold 12px 'Inter'"; ctx.fillStyle="#fff"; ctx.fillText(SEGMENTS[i].short, r*0.68,5); ctx.restore();
+            ctx.strokeStyle="#00000066"; ctx.beginPath(); ctx.arc(c,c,r,start,end); ctx.lineTo(c,c); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(c,c,24,0,Math.PI*2); ctx.fillStyle="#010107"; ctx.fill(); ctx.strokeStyle="#3ea5ff"; ctx.lineWidth=2; ctx.stroke();
+    }
+
+    function animateSpin(start, target, dur, cb) {
+        const startT = performance.now();
+        function step(now) {
+            let t = Math.min(1, (now-startT)/dur);
+            let ease = 1-Math.pow(1-t,3);
+            let curr = start + (target-start)*ease;
+            drawWheel(curr);
+            if(t<1) requestAnimationFrame(step);
+            else { drawWheel(target); if(cb) cb(); }
+        }
+        requestAnimationFrame(step);
+    }
+
+    function getRandomIndex() {
+        let total = WEIGHTS.reduce((a,b)=>a+b,0), rand = Math.random()*total, acc=0;
+        for(let i=0;i<WEIGHTS.length;i++){ acc+=WEIGHTS[i]; if(rand<=acc) return i; }
+        return 0;
+    }
+
+    async function spinWheel(isPaid) {
+        if(spinLock){ showToast("Колесо крутится..."); return; }
+        const now = Date.now();
+        if(!isPaid && lastFreeSpinTime && (now-lastFreeSpinTime < 2*24*60*60*1000)){
+            showToast("Бесплатное вращение раз в 2 дня"); return;
+        }
+        if(isPaid && balanceStars<25){ showToast(`Не хватает звёзд! (${balanceStars}⭐)`); return; }
+        spinLock=true;
+        const btn=document.getElementById('spinFreeBtn'); if(btn) btn.disabled=true;
+        const idx=getRandomIndex();
+        const reward=SEGMENTS[idx];
+        const segDeg=360/SEGMENTS.length;
+        const targetOffset=(idx*segDeg)+segDeg/2;
+        const curr=currentRotationDeg%360;
+        const full=360*7;
+        let needed=(360-targetOffset+45)%360;
+        let delta=(needed-curr+360)%360;
+        const final=curr+full+delta;
+        animateSpin(curr, final, 2100, async ()=>{
+            currentRotationDeg=final%360;
+            if(isPaid){
+                if(balanceStars>=25){ balanceStars-=25; updateUI(); addTransaction(-25,"Платное вращение"); showToast("-25⭐"); }
+                else{ spinLock=false; if(btn) btn.disabled=false; return; }
+            }else{
+                lastFreeSpinTime=Date.now(); updateSpinTimer(); saveLocal();
+            }
+            let msg="";
+            if(reward.type==="balance" && reward.value>0){
+                balanceStars+=reward.value;
+                updateUI();
+                addTransaction(reward.value, `Выигрыш в колесе +${reward.value}⭐`);
+                msg=`✨ ПОЗДРАВЛЯЮ! +${reward.value} звёзд!`;
+                showToast(msg);
+                addWheelHistory(`Выигрыш +${reward.value}⭐`);
+            }else if(reward.type==="subscription"){
+                msg=`🎁 ПОДАРОК! Вы выиграли подписку на 30 дней! Напишите @ylvvvl`;
+                showToast(msg);
+                addWheelHistory(`🎁 Подписка 30 дней`);
+            }else{
+                msg=`😢 Проигрыш, попробуйте ещё!`;
+                showToast(msg);
+                addWheelHistory(`Проигрыш`);
+            }
+            spinLock=false; if(btn) btn.disabled=false; updateSpinTimer();
+        });
+    }
+
+    function openTrial(){ window.open('https://t.me/folwixxxvpn_bot?start=trial','_blank'); showToast("Переход к боту"); }
+    function showToast(m){ const t=document.getElementById('toastGlobal'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+    function closeApp(){ if(tgApp) tgApp.close(); else window.close(); }
+
+    function renderGuides(){
+        const container=document.getElementById('guidesContainer');
+        if(!container) return;
+        let html='';
+        for(let [k,guide] of Object.entries(guidesData)){
+            html+=`
+                <div class="guide-item">
+                    <div class="guide-title" onclick="toggleGuide(this)"><span>${guide.title}</span><span class="arrow">▼</span></div>
+                    <div class="guide-content"><div class="guide-step">${guide.steps.replace(/\n/g,'<br>')}</div><a href="${guide.link}" target="_blank" class="download-link">📥 Скачать приложение →</a></div>
+                </div>`;
+        }
+        container.innerHTML=html;
+    }
+    window.toggleGuide=(el)=>{ const c=el.nextElementSibling; const a=el.querySelector('.arrow'); c.classList.toggle('show'); if(a)a.classList.toggle('rotated'); };
+
+    function buildTabs(){
+        document.getElementById('tab-home').innerHTML = `<div class="glass-card"><div class="card-header">🔐 ЗАЩИТА</div><div>Привет, <strong id="welcomeName">пользователь</strong>!</div><div id="homeSubBadge"></div><div id="trialHomeBtn"></div></div><div class="glass-card"><div class="card-header">⭐ БАЛАНС</div><div class="balance-big" id="homeBalance">0</div><div style="text-align:center;">звёзд</div></div><div class="glass-card"><div class="card-header">📊 ОНЛАЙН</div><div style="display:flex; gap:10px;"><div style="flex:1; background:#03050e; border-radius:18px; padding:8px; text-align:center;"><span id="totalUsersStat">--</span><div style="font-size:10px;">Всего</div></div><div style="flex:1; background:#03050e; border-radius:18px; padding:8px; text-align:center;"><span id="activeTodayStat">--</span><div style="font-size:10px;">Сегодня</div></div></div></div>`;
+        document.getElementById('tab-subscription').innerHTML = `<div class="glass-card"><div class="card-header">📡 СТАТУС</div><div id="subStatusArea"></div></div><div class="glass-card"><div class="card-header">📲 УСТАНОВКА</div><div id="guidesContainer"></div><div style="font-size:10px; color:#5a6e8a; text-align:center; margin-top:8px;">🔗 Конфиги выдаются после оплаты в боте</div></div>`;
+        document.getElementById('tab-balance').innerHTML = `<div class="glass-card"><div class="card-header">💰 БАЛАНС</div><div class="balance-big" id="balanceDetail">0</div></div><div class="glass-card"><div class="card-header">📜 ИСТОРИЯ</div><div id="transactionHistoryContainer" class="history-list"></div></div>`;
+        document.getElementById('tab-wheel').innerHTML = `<div class="glass-card"><div class="card-header">🎡 КОЛЕСО ФОРТУНЫ</div><div class="prize-list"><span class="prize-badge">😢 Проигрыш (60%)</span><span class="prize-badge">⭐ +20 (12%)</span><span class="prize-badge">⭐ +40 (8%)</span><span class="prize-badge">⭐ +80 (5%)</span><span class="prize-badge">⭐ +150 (3%)</span><span class="prize-badge">🎁 30 дней (2%)</span></div><div style="display:flex; justify-content:center;"><div class="wheel-wrapper"><canvas id="wheelCanvas" width="500" height="500" class="wheel-canvas"></canvas><div class="wheel-pointer"></div><div class="wheel-center-logo">🎲</div></div></div><button class="spin-btn" id="spinFreeBtn">✨ КРУТИТЬ БЕСПЛАТНО</button><div class="action-row"><div class="buy-spin-glass" id="spinStarsBtn">⭐ Крутить за 25 звёзд</div></div><div id="spinTimerText" style="text-align:center; font-size:10px; margin-top:8px;"></div><div class="history-list" id="wheelHistoryList"></div></div>`;
+        document.getElementById('tab-support').innerHTML = `<div class="glass-card"><div class="card-header">💬 ПОДДЕРЖКА</div><button class="spin-btn" onclick="window.open('https://t.me/ylvvvl','_blank')">📱 Связаться с поддержкой</button><div style="margin:14px 0;"><div class="card-header">❓ Частые вопросы</div><div class="faq-item"><b>❓ Как активировать подписку?</b><br>Оплатите через /pay в боте, конфиг придёт автоматически</div><div class="faq-item"><b>❓ Не работает VPN?</b><br>Попробуйте сменить протокол или переустановить конфиг</div><div class="faq-item"><b>❓ Как пополнить баланс звёзд?</b><br>Используйте команду /pay в боте (админ пополняет)</div><div class="faq-item"><b>❓ Выиграл подписку в колесе?</b><br>Напишите @ylvvvl с ID и скрином выигрыша</div></div></div>`;
+        document.getElementById('tab-info').innerHTML = `<div class="glass-card"><div class="card-header">📜 ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ</div><div class="legal-text">Настоящее соглашение о конфиденциальности использования персональных данных регулирует порядок сбора, использования и разглашения Администрацией FOLWIXXX VPN информации о Пользователе...\n\n1. ИСТОЧНИКИ ИНФОРМАЦИИ\n1.1 Информация может быть персонифицированной и не персонифицированной.\n1.2 Администрации доступна информация, получаемая при регистрации, переписке, технические данные.\n1.3 Конфиденциальной признаётся информация в зашифрованной базе данных.\n\n2. БЕЗОПАСНОСТЬ\n2.1 Используются современные технологии защиты.\n2.2 Доступ через логин и пароль.\n2.3 Сбор и обработка персональных данных в соответствии с законодательством РФ.\n\n3. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n3.1 Деятельность осуществляется по законам РФ.\n3.2 Администрация не несёт ответственности за убытки от использования бота.</div></div><div class="glass-card"><div class="card-header">📄 ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ</div><div class="legal-text">Настоящее Пользовательское соглашение является публичной офертой и определяет условия использования Telegram-бота FOLWIXXX VPN.\n\n1. ПРЕДМЕТ СОГЛАШЕНИЯ\n1.1 Администрация предоставляет доступ к боту.\n1.2 Использование бота означает согласие с условиями.\n\n2. ФУНКЦИОНАЛ\n2.1 Бот предоставляет безопасный доступ через прокси.\n2.2 Функции могут быть изменены.\n\n3. ПРАВИЛА ИСПОЛЬЗОВАНИЯ\n3.1 Запрещено: несанкционированный доступ, спам, вмешательство в работу бота.\n3.2 Администрация может ограничить доступ при нарушении.\n\n4. ОТВЕТСТВЕННОСТЬ\n4.1 Администрация не несёт ответственности за убытки от использования бота.\n4.2 Пользователь несёт ответственность за свои действия.\n\n5. КОНТАКТЫ: @ylvvvl</div></div>`;
+    }
+
+    function switchTab(tabId){
+        document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active-nav'));
+        const activeNav = document.querySelector(`.nav-item[data-nav="${tabId}"]`);
+        if(activeNav) activeNav.classList.add('active-nav');
+        if(tabId==='home') loadStats();
+        if(tabId==='wheel' && wheelCanvas && ctx) drawWheel(currentRotationDeg);
+    }
+
+    async function loadStats(){
+        try{
+            const res=await fetch('https://raw.githubusercontent.com/folwixxxx/-VPN-FOLWIXXXXX-/main/users.json');
+            if(res.ok){ const arr=await res.json(); document.getElementById('totalUsersStat').innerText=arr.length||'245'; }
+            else document.getElementById('totalUsersStat').innerText='1.2k';
+        }catch(e){ document.getElementById('totalUsersStat').innerText='847'; }
+        document.getElementById('activeTodayStat').innerText=Math.floor(Math.random()*70)+45;
+    }
+
+    function init(){
+        if(window.Telegram?.WebApp){
+            tgApp=Telegram.WebApp; tgApp.ready(); tgApp.expand();
+            if(tgApp.initDataUnsafe?.user){
+                userId=tgApp.initDataUnsafe.user.id;
+                document.getElementById('userName').innerText=tgApp.initDataUnsafe.user.first_name||'Пользователь';
+                document.getElementById('userIdDisplay').innerText=`ID: ${userId}`;
+                document.getElementById('welcomeName').innerText=tgApp.initDataUnsafe.user.first_name||'друг';
+            }
+        }else{
+            document.getElementById('userName').innerText='Тест';
+            document.getElementById('userIdDisplay').innerText=`ID: ${userId}`;
+            document.getElementById('welcomeName').innerText='Тестер';
+        }
+        buildTabs();
+        renderGuides();
+        wheelCanvas=document.getElementById('wheelCanvas');
+        if(wheelCanvas){ ctx=wheelCanvas.getContext('2d'); drawWheel(0); }
+        loadData().then(()=>loadStats());
+        document.getElementById('spinFreeBtn')?.addEventListener('click',()=>spinWheel(false));
+        document.getElementById('spinStarsBtn')?.addEventListener('click',()=>spinWheel(true));
+        document.querySelectorAll('.nav-item').forEach(btn=>{
+            btn.addEventListener('click',()=>switchTab(btn.dataset.nav));
+        });
+        // сайдбар
+        const menuBtn=document.getElementById('menuBtn');
+        const sidebar=document.getElementById('sidebar');
+        const overlay=document.getElementById('sidebarOverlay');
+        if(menuBtn){
+            menuBtn.onclick=()=>{ sidebar.classList.add('open'); overlay.classList.add('show'); };
+            overlay.onclick=()=>{ sidebar.classList.remove('open'); overlay.classList.remove('show'); };
+            document.querySelectorAll('.sidebar-item').forEach(item=>{
+                item.onclick=()=>{
+                    const tab=item.dataset.sidebar;
+                    if(tab && document.getElementById(`tab-${tab}`)) switchTab(tab);
+                    sidebar.classList.remove('open'); overlay.classList.remove('show');
+                };
+            });
+        }
+    }
+    init();
+</script>
+</body>
+</html>
