@@ -2,8 +2,8 @@ name: Auto-Expire and Update Subscriptions
 
 on:
   schedule:
-    - cron: '*/5 * * * *'      # Проверка истечения каждые 5 минут
-    - cron: '0 */6 * * *'      # Обновление конфигов каждые 6 часов
+    - cron: '*/5 * * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,6 @@ jobs:
           EXPIRED_COUNT=0
           ACTIVE_COUNT=0
           
-          # Only all-sub and trial-sub folders
           for folder in all-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
               for expiry_file in subscriptions/$folder/*.expiry; do
@@ -39,12 +38,10 @@ jobs:
                   echo "❌ $folder/$username: expired (was until $EXPIRE_DATE)"
                   EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
                   
-                  # Delete old files
                   rm -f "$data_file"
                   rm -f "$expiry_file"
                   rm -f "subscriptions/$folder/${username}.type" 2>/dev/null
                   
-                  # Create dummy file to avoid 404 errors
                   echo "# profile-title: ❌ SUBSCRIPTION EXPIRED ❌" > "$data_file"
                   echo "# profile-update-interval: 5" >> "$data_file"
                   echo "# status: EXPIRED" >> "$data_file"
@@ -76,7 +73,6 @@ jobs:
                 username=$(basename "$txt_file" .txt)
                 expiry_file="subscriptions/$folder/${username}.expiry"
                 
-                # If no expiry file and not a dummy
                 if [ ! -f "$expiry_file" ]; then
                   if ! grep -q "EXPIRED" "$txt_file"; then
                     echo "⚠️ Fixing: $txt_file (no expiry)"
@@ -134,7 +130,6 @@ jobs:
           echo "🔄 STARTING UPDATE"
           echo "📅 Time: $(date)"
           
-          # Update all-sub
           if [ -f "all-sub.txt" ] && [ -d "subscriptions/all-sub" ]; then
             for expiry in subscriptions/all-sub/*.expiry; do
               [ ! -f "$expiry" ] && continue
@@ -179,7 +174,6 @@ jobs:
           echo "🧹 CLEANING EXPIRED TRIAL SUBSCRIPTIONS"
           echo "🕐 Time: $(date)"
           
-          # Clean trial-sub folder
           if [ -d "subscriptions/trial-sub" ]; then
             for expiry_file in subscriptions/trial-sub/*.expiry; do
               [ ! -f "$expiry_file" ] && continue
@@ -195,7 +189,6 @@ jobs:
             done
           fi
           
-          # Clean trials flags older than 30 days
           if [ -d "trials" ]; then
             for trial_flag in trials/trial_*; do
               [ ! -f "$trial_flag" ] && continue
