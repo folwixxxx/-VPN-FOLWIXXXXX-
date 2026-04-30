@@ -134,10 +134,14 @@ def save_user(user_id):
 def get_template_content():
     """Получает шаблон all-sub.txt из корня репозитория через RAW"""
     try:
-        # Прямая ссылка на raw файл
         url = f"{RAW_BASE}/all-sub.txt"
         print(f"📥 Загружаем шаблон: {url}")
+        
         resp = requests.get(url, timeout=10)
+        
+        # Отправляем админу информацию о загрузке
+        bot.send_message(YOUR_ADMIN_ID, f"🔍 ПРОВЕРКА ШАБЛОНА\nURL: {url}\nСтатус: {resp.status_code}\nДлина: {len(resp.text) if resp.status_code == 200 else 'N/A'}\n\nПервые 200 символов:\n{resp.text[:200] if resp.status_code == 200 else 'Ошибка'}")
+        
         if resp.status_code == 200:
             print(f"✅ Шаблон загружен, длина: {len(resp.text)} символов")
             return resp.text
@@ -146,6 +150,7 @@ def get_template_content():
             return None
     except Exception as e:
         print(f"❌ Исключение при загрузке шаблона: {e}")
+        bot.send_message(YOUR_ADMIN_ID, f"❌ ИСКЛЮЧЕНИЕ ПРИ ЗАГРУЗКЕ: {e}")
         return None
 
 def create_subscription(user_id, days):
@@ -157,8 +162,7 @@ def create_subscription(user_id, days):
     template = get_template_content()
     if not template:
         print(f"❌ Не удалось получить шаблон all-sub.txt")
-        # Отправляем админу ошибку
-        bot.send_message(YOUR_ADMIN_ID, f"❌ ОШИБКА: Не удалось получить шаблон all-sub.txt\nПроверь, что файл есть в репозитории: {RAW_BASE}/all-sub.txt")
+        bot.send_message(YOUR_ADMIN_ID, f"❌ НЕ УДАЛОСЬ ПОЛУЧИТЬ ШАБЛОН для user_id={user_id}")
         return None
     
     expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
