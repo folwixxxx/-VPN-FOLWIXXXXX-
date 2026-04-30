@@ -72,10 +72,12 @@ def check_subscription_callback(call):
         bot.answer_callback_query(call.id, "Вы не подписаны!", show_alert=True)
 
 def generate_user_token(user_id, expiry_timestamp):
-    return hashlib.md5(f"{user_id}_{expiry_timestamp}_{SECRET_KEY}".encode()).hexdigest()[:32]
+    message = f"{user_id}_{expiry_timestamp}_{SECRET_KEY}"
+    return hashlib.md5(message.encode()).hexdigest()[:32]
 
 def verify_user_token(user_id, token, expiry_timestamp):
-    return hmac.compare_digest(generate_user_token(user_id, expiry_timestamp), token)
+    expected = generate_user_token(user_id, expiry_timestamp)
+    return hmac.compare_digest(expected, token)
 
 def github_upload_file(filename, content, folder=""):
     full_path = f"{folder}/{filename}" if folder else filename
@@ -173,8 +175,8 @@ def create_subscription(user_id, days):
     if not (success1 and success2):
         return None
     
-    token = generate_user_token(user_id, expiry_timestamp)
-    return f"{RAW_BASE}/{folder_path}/{filename}.txt?token={token}&t={int(time.time())}"
+    # ВОЗВРАЩАЕМ ССЫЛКУ БЕЗ ТОКЕНА
+    return f"{RAW_BASE}/{folder_path}/{filename}.txt?t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
     content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
@@ -186,8 +188,7 @@ def get_user_subscription_info(user_id):
                 return None, None, None
             days = (ts - now) // 86400
             date = datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M:%S")
-            token = generate_user_token(user_id, ts)
-            link = f"{RAW_BASE}/subscriptions/all-sub/user_{user_id}.txt?token={token}&t={int(time.time())}"
+            link = f"{RAW_BASE}/subscriptions/all-sub/user_{user_id}.txt?t={int(time.time())}"
             return days, date, link
         except:
             return None, None, None
