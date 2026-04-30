@@ -16,12 +16,13 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
+API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
-# ==================== ЦЕНЫ ДЛЯ ALL-SUB ====================
-ALL_SUB_PRICES = {
+# ==================== ЦЕНЫ ====================
+PRICES = {
     30: {"ton": 2.0, "stars": 200, "balance": 200},
     60: {"ton": 3.5, "stars": 350, "balance": 350},
     90: {"ton": 5.0, "stars": 500, "balance": 500}
@@ -31,7 +32,6 @@ ALL_SUB_PRICES = {
 REQUIRED_CHANNEL = "folwixxxvpn"
 CHANNEL_URL = f"https://t.me/{REQUIRED_CHANNEL}"
 
-# Проверка
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
     raise Exception("❌ Ошибка: не все переменные окружения заданы!")
 
@@ -79,7 +79,7 @@ def verify_user_token(user_id, token, expiry_timestamp):
     return hmac.compare_digest(generate_user_token(user_id, expiry_timestamp), token)
 
 def ensure_folder(folder_path):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{folder_path}/.gitkeep"
+    url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     data = {"message": f"Create folder {folder_path}", "content": base64.b64encode(b"").decode('utf-8')}
     resp = requests.put(url, headers=headers, json=data)
@@ -87,7 +87,7 @@ def ensure_folder(folder_path):
 
 def github_upload_file(filename, content, folder=""):
     full_path = f"{folder}/{filename}" if folder else filename
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
+    url = f"{API_BASE}/contents/{full_path}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
@@ -103,7 +103,7 @@ def github_upload_file(filename, content, folder=""):
     return result.status_code in [200, 201]
 
 def github_get_file_content(filepath):
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
+    url = f"{API_BASE}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         resp = requests.get(url, headers=headers)
@@ -131,14 +131,19 @@ def save_user(user_id):
     return False
 
 def get_template_content():
-    """Получает шаблон all-sub.txt из корня репозитория через RAW"""
+    """Берёт шаблон ТОЛЬКО из файла all-sub.txt в КОРНЕ репозитория"""
     url = f"{RAW_BASE}/all-sub.txt"
+    print(f"📥 Загружаем шаблон: {url}")
     try:
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
+            print(f"✅ Шаблон загружен, длина: {len(resp.text)}")
             return resp.text
-        return None
-    except:
+        else:
+            print(f"❌ Ошибка {resp.status_code}")
+            return None
+    except Exception as e:
+        print(f"❌ Исключение: {e}")
         return None
 
 def create_subscription(user_id, days):
@@ -150,7 +155,7 @@ def create_subscription(user_id, days):
     
     template = get_template_content()
     if not template:
-        print(f"❌ Не удалось получить шаблон all-sub.txt")
+        bot.send_message(YOUR_ADMIN_ID, f"❌ **НЕТ ШАБЛОНА all-sub.txt**\n\nНе удалось загрузить файл из репозитория:\n{RAW_BASE}/all-sub.txt")
         return None
     
     expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
@@ -177,6 +182,7 @@ def create_subscription(user_id, days):
     github_upload_file(f"{filename}.type", "all", f"subscriptions/{folder}")
     
     if not (success1 and success2):
+        print(f"❌ Ошибка загрузки: success1={success1}, success2={success2}")
         return None
     
     token = generate_user_token(user_id, expiry_timestamp)
@@ -289,16 +295,11 @@ def locations_info(call):
         "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
         "Мы подготовили для вас статью, которая подробно разбирает,\n"
         "как выбрать локацию в вашей подписке под разные задачи.\n\n"
-        "📖 В статье вы узнаете:\n"
-        "• Какие локации лучше для ютуба\n"
-        "• Где самый быстрый интернет\n"
-        "• Какую страну выбрать для игр\n"
-        "• Оптимальные настройки для разных задач\n\n"
         "👇 **Нажмите на кнопку ниже, чтобы прочитать статью**"
     )
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📖 Читать статью о локациях", url="https://teletype.in/@ylvv/location"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    keyboard.add(InlineKeyboardButton("📖 Читать статью", url="https://teletype.in/@ylvv/location"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
     bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
@@ -306,17 +307,11 @@ def locations_info(call):
 def privacy_policy(call):
     text = (
         "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
-        "Мы серьезно относимся к защите ваших персональных данных.\n\n"
-        "В нашей политике конфиденциальности вы найдете информацию о:\n"
-        "• Какие данные мы собираем\n"
-        "• Как мы используем ваши данные\n"
-        "• Как мы защищаем вашу информацию\n"
-        "• Ваши права как пользователя\n\n"
         "👇 **Нажмите на кнопку ниже, чтобы ознакомиться с полной версией**"
     )
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📄 Читать политику конфиденциальности", url="https://teletype.in/@ylvv/politica"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    keyboard.add(InlineKeyboardButton("📄 Читать", url="https://teletype.in/@ylvv/politica"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
     bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
@@ -362,8 +357,8 @@ def start_command(message):
         "✅ Обход ограничений\n"
         "✅ Безлимитный трафик\n\n"
         "**📦 ALL-SUB — ЕДИНЫЙ ТАРИФ**\n"
-        "🌍 **Все серверы** (Нидерланды, Германия, Финляндия, Польша, Латвия, Чехия, США)\n"
-        "⚡ **Выбирайте сервер в самом приложении v2rayNG**\n"
+        "🌍 **Все серверы**\n"
+        "⚡ **Выбирайте сервер в приложении**\n"
         "🔒 **Блокировка рекламы и трекеров**\n\n"
         "💰 **Цены:**\n"
         "• 30 дней — 2 TON / 200⭐ / 200💵\n"
@@ -380,32 +375,19 @@ def start_command(message):
 @bot.message_handler(commands=['profile'])
 @require_subscription
 def profile_command(message):
-    user_id = message.from_user.id  # <- ИСПРАВЛЕНО: берем ID из message
+    user_id = message.from_user.id
     balance = get_balance(user_id)
-    days_left, expiry_date, subscription_link = get_user_subscription_info(user_id)
+    days_left, expiry_date, link = get_user_subscription_info(user_id)
     keyboard = InlineKeyboardMarkup()
-    if days_left and days_left != "expired" and days_left is not None:
-        keyboard.add(InlineKeyboardButton("🔄 Обновить конфиг", callback_data="refresh_config_profile"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
+    if days_left:
+        keyboard.add(InlineKeyboardButton("🔄 Обновить", callback_data="refresh_config_profile"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
     
-    text = f"👤 **ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ**\n\n"
-    text += f"🆔 ID: `{user_id}`\n"
-    text += f"💰 Баланс: {balance} 💵\n"
-    if days_left is None:
-        text += "📅 Статус: ❌ **Нет активной подписки**\n\n💡 Используйте /buy для покупки ALL-SUB"
+    text = f"👤 **ПРОФИЛЬ**\n\n🆔 `{user_id}`\n💰 Баланс: {balance} 💵\n"
+    if days_left:
+        text += f"📦 ALL-SUB ✅ Активна\n📅 Осталось: {days_left} дней\n📅 До: {expiry_date}\n🔗 {link}"
     else:
-        text += f"📦 **ТАРИФ: ALL-SUB**\n"
-        text += f"🌍 Все серверы (выбор в приложении)\n"
-        text += f"📅 Статус: ✅ **Активна**\n"
-        text += f"📅 Осталось дней: {days_left}\n"
-        text += f"📅 Действует до: `{expiry_date}`\n"
-        text += f"🔗 Ссылка для v2rayNG:\n`{subscription_link}`\n\n"
-        text += f"📱 **Как выбрать сервер:**\n"
-        text += f"• Добавьте ссылку в v2rayNG\n"
-        text += f"• Нажмите на иконку профиля вверху\n"
-        text += f"• Выберите нужный сервер\n"
-        text += f"• Нажмите ▶️ для подключения\n\n"
-        text += f"🔄 Конфиг обновляется автоматически"
+        text += "📅 Статус: ❌ Нет подписки\n\n💡 /buy"
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['buy'])
@@ -418,24 +400,7 @@ def buy_command(message):
         InlineKeyboardButton("📆 90 дней", callback_data="buy_90")
     )
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    
-    bot.send_message(
-        message.chat.id,
-        "💎 **ALL-SUB — ЕДИНЫЙ ТАРИФ**\n\n"
-        "🌍 **Все серверы в одном конфиге:**\n"
-        "🇳🇱 Нидерланды (3 сервера) • 🇩🇪 Германия (3 сервера)\n"
-        "🇫🇮 Финляндия (2 сервера) • 🇵🇱 Польша (3 сервера)\n"
-        "🇱🇻 Латвия (2 сервера) • 🇨🇿 Чехия (1 сервер) • 🇺🇸 США (1 сервер)\n\n"
-        "⚡ **Вы выбираете сервер в самом приложении v2rayNG!**\n"
-        "🔒 **Встроенная блокировка рекламы и трекеров**\n\n"
-        "💰 **Цены:**\n"
-        "• 30 дней — 2 TON / 200⭐ / 200💵\n"
-        "• 60 дней — 3.5 TON / 350⭐ / 350💵\n"
-        "• 90 дней — 5 TON / 500⭐ / 500💵\n\n"
-        "📅 **Выберите период:**",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    bot.send_message(message.chat.id, "💎 **ALL-SUB**\n\n💰 30д: 2 TON / 200⭐ / 200💵\n💰 60д: 3.5 TON / 350⭐ / 350💵\n💰 90д: 5 TON / 500⭐ / 500💵", reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data == 'buy_30')
 def buy_30(call):
@@ -461,12 +426,7 @@ def process_payment(call, days, ton, stars, bal):
         InlineKeyboardButton("◀️ Назад", callback_data="buy_menu")
     )
     bot.edit_message_text(
-        f"💳 **Способ оплаты ALL-SUB**\n\n"
-        f"📅 {days} дней\n"
-        f"🌍 Все серверы (выбор в приложении)\n\n"
-        f"💎 TON: {ton}\n"
-        f"⭐ Stars: {stars}\n"
-        f"💰 Баланс: {bal} 💵",
+        f"💳 **Способ оплаты**\n\n📅 {days} дней\n💎 TON: {ton}\n⭐ Stars: {stars}\n💰 Баланс: {bal} 💵",
         call.message.chat.id, call.message.message_id,
         reply_markup=keyboard, parse_mode='Markdown'
     )
@@ -477,70 +437,40 @@ def process_payment(call, days, ton, stars, bal):
 def trial_command(message):
     user_id = message.from_user.id
     if github_get_file_content(f"trials/trial_{user_id}"):
-        bot.reply_to(message, "❌ Вы уже использовали пробный период!")
+        bot.reply_to(message, "❌ Уже использовали пробный!")
         return
     days_left, _, _ = get_user_subscription_info(user_id)
     if days_left:
-        bot.reply_to(message, "❌ У вас уже есть активная подписка!")
+        bot.reply_to(message, "❌ Уже есть подписка!")
         return
-    
     link = create_subscription(user_id, 1)
     if link:
         github_upload_file(f"trial_{user_id}", "used", "trials")
-        bot.send_message(
-            user_id,
-            f"🎁 **Пробный период ALL-SUB активирован!**\n\n"
-            f"🌍 Все серверы\n"
-            f"📅 Действует: 1 день\n\n"
-            f"🔗 **Ваша ссылка:**\n{link}\n\n"
-            f"📱 **Как выбрать сервер в v2rayNG:**\n"
-            f"1. Добавьте ссылку в приложение\n"
-            f"2. Нажмите на иконку профиля вверху\n"
-            f"3. Выберите нужный сервер из списка\n"
-            f"4. Нажмите ▶️ для подключения"
-        )
-        bot.send_message(YOUR_ADMIN_ID, f"🎁 **ПРОБНЫЙ ПЕРИОД ALL-SUB**\n👤 {user_id}\n📅 1 день")
+        bot.send_message(user_id, f"🎁 **Пробный период 1 день!**\n\n🔗 {link}")
+        bot.send_message(YOUR_ADMIN_ID, f"🎁 ПРОБНЫЙ ПЕРИОД\n👤 {user_id}")
     else:
-        bot.reply_to(message, "❌ Ошибка при активации")
+        bot.reply_to(message, "❌ Ошибка")
 
 @bot.message_handler(commands=['support'])
 @require_subscription
 def support_command(message):
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📩 Написать в поддержку", url=f"https://t.me/{YOUR_USERNAME}"))
-    keyboard.add(InlineKeyboardButton("◀️ Назад в меню", callback_data="back_to_main"))
-    bot.send_message(
-        message.chat.id,
-        "🛠️ **ПОДДЕРЖКА**\n\n"
-        "Если у вас возникли проблемы с подключением,\n"
-        "вопросы по оплате или другие сложности —\n\n"
-        "Нажмите на кнопку ниже, чтобы написать в поддержку.\n\n"
-        "Мы постараемся ответить как можно быстрее!",
-        reply_markup=keyboard,
-        parse_mode='Markdown'
-    )
+    keyboard.add(InlineKeyboardButton("📩 Написать", url=f"https://t.me/{YOUR_USERNAME}"))
+    keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
+    bot.send_message(message.chat.id, "🛠️ **ПОДДЕРЖКА**\n\nПроблемы? Пишите!", reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['refresh_config'])
 @require_subscription
 def refresh_config_command(message):
-    user_id = message.from_user.id
-    days_left, _, _ = get_user_subscription_info(user_id)
-    if days_left is None:
-        bot.reply_to(message, "❌ У вас нет активной подписки!")
+    days_left, _, _ = get_user_subscription_info(message.from_user.id)
+    if not days_left:
+        bot.reply_to(message, "❌ Нет подписки")
         return
-    
-    link = create_subscription(user_id, days_left)
+    link = create_subscription(message.from_user.id, days_left)
     if link:
-        _, _, new_link = get_user_subscription_info(user_id)
-        bot.reply_to(
-            message,
-            f"✅ **Ваш конфиг ALL-SUB обновлен!**\n\n"
-            f"📱 Обновите ссылку в приложении:\n{new_link}\n\n"
-            f"🌍 Все серверы обновлены!",
-            parse_mode='Markdown'
-        )
+        bot.reply_to(message, f"✅ **Конфиг обновлен!**\n\n{link}")
     else:
-        bot.reply_to(message, "❌ Ошибка при обновлении")
+        bot.reply_to(message, "❌ Ошибка")
 
 # ==================== АДМИН КОМАНДЫ ====================
 @bot.message_handler(commands=['pay'])
@@ -596,11 +526,10 @@ def handle_balance_payment(call):
     
     if link:
         bot.edit_message_text(
-            f"✅ **Подписка ALL-SUB создана!**\n\n"
+            f"✅ **Подписка создана!**\n\n"
             f"💰 {amount} 💵\n"
             f"💰 Остаток: {new_balance} 💵\n"
-            f"📅 {days} дней\n"
-            f"🌍 Все серверы\n\n"
+            f"📅 {days} дней\n\n"
             f"🔗 {link}",
             call.message.chat.id, call.message.message_id,
             parse_mode='Markdown'
@@ -618,23 +547,15 @@ def handle_ton_payment(call):
     parts = call.data.split('_')
     days = int(parts[1])
     amount = float(parts[2])
-    user_id = call.from_user.id
-    pending_payments[user_id] = {"days": days}
-    
+    pending_payments[call.from_user.id] = {"days": days}
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅ Перевел", callback_data=f"check_{days}_{amount}"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
     bot.edit_message_text(
-        f"💳 **Оплата TON для ALL-SUB**\n\n"
-        f"💰 {amount} TON\n"
-        f"📅 {days} дней\n"
-        f"🌍 Все серверы\n\n"
-        f"**Кошелёк:**\n`{TON_WALLET}`\n\n"
-        f"Переведите точную сумму и нажмите «✅ Перевел»",
+        f"💳 **Оплата TON**\n\n💰 {amount} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Перевел»",
         call.message.chat.id, call.message.message_id,
         reply_markup=keyboard, parse_mode='Markdown'
     )
-    bot.send_message(YOUR_ADMIN_ID, f"💳 НАЧАЛО ОПЛАТЫ TON\n👤 {user_id}\n💰 {amount} TON")
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('stars_'))
@@ -668,7 +589,6 @@ def support(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'profile')
 def profile(call):
-    # ИСПРАВЛЕНО: создаем фейковое сообщение с правильным ID
     class FakeMessage:
         def __init__(self, user_id, chat_id):
             self.from_user = type('obj', (object,), {'id': user_id})()
@@ -704,7 +624,6 @@ def back_main(call):
     start_command(call.message)
     bot.answer_callback_query(call.id)
 
-# ==================== УТИЛИТЫ ====================
 def send_user_info_to_admin(message):
     save_user(message.from_user.id)
     try:
