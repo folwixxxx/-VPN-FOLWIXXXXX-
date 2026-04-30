@@ -274,7 +274,7 @@ def handle_successful_payment(message):
             bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 {days} дней\n🌍 16 серверов")
             bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
-# ==================== ЦВЕТНЫЕ КНОПКИ (100% ширины) ====================
+# ==================== КНОПКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
 def locations_info(call):
     keyboard = InlineKeyboardMarkup()
@@ -309,22 +309,27 @@ def setup_main_menu_button():
 def start_command(message):
     save_user(message.from_user.id)
     
-    # Inline клавиатура с полноширинными цветными кнопками
-    keyboard = InlineKeyboardMarkup(row_width=1)
+    keyboard = InlineKeyboardMarkup()
     
-    # Кнопка профиля (синяя) — первая, отдельно
-    keyboard.add(InlineKeyboardButton("🔷 🛡️ Личный кабинет", callback_data="profile"))
+    # Первая кнопка - ЛК (на всю ширину, синяя)
+    keyboard.add(InlineKeyboardButton("🔵 🛡️ ЛИЧНЫЙ КАБИНЕТ", callback_data="profile"))
     
-    # Кнопка покупки (зелёная) — вторая, отдельно
-    keyboard.add(InlineKeyboardButton("🟢 💰 Купить VPN", callback_data="buy_menu"))
+    # Вторая кнопка - Купить (на всю ширину, зелёная)
+    keyboard.add(InlineKeyboardButton("🟢 💰 КУПИТЬ VPN", callback_data="buy_menu"))
     
-    # Остальные кнопки (без цвета)
-    keyboard.add(InlineKeyboardButton("🎁 Пробный период", callback_data="trial"))
-    keyboard.add(InlineKeyboardButton("🛠️ Поддержка", callback_data="support"))
-    keyboard.add(InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL))
-    keyboard.add(InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")))
-    keyboard.add(InlineKeyboardButton("📍 Локации", callback_data="locations"))
-    keyboard.add(InlineKeyboardButton("📚 Политика", callback_data="privacy_policy"))
+    # Остальные кнопки - по две в строке
+    keyboard.row(
+        InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
+        InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
+    )
+    keyboard.row(
+        InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL),
+        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
+    )
+    keyboard.row(
+        InlineKeyboardButton("📍 Локации", callback_data="locations"),
+        InlineKeyboardButton("📚 Политика", callback_data="privacy_policy")
+    )
     
     caption = (
         "🛡️ **FOLWIXXX VPN**\n\n"
