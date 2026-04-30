@@ -35,7 +35,6 @@ CHANNEL_URL = f"https://t.me/{REQUIRED_CHANNEL}"
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
     raise Exception("❌ Ошибка: не все переменные окружения заданы!")
 
-# ==================== ИНИЦИАЛИЗАЦИЯ ====================
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 pending_payments = {}
 
@@ -84,20 +83,20 @@ def github_upload_file(filename, content, folder=""):
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
-    # Пробуем создать файл
-    data = {"message": f"Create/Update {full_path}", "content": content_b64}
-    result = requests.put(url, headers=headers, json=data)
+    # Пробуем получить существующий файл чтобы узнать SHA
+    get_resp = requests.get(url, headers=headers)
+    data = {"message": f"Update {full_path}", "content": content_b64}
     
-    # Если файл уже есть (409) - обновляем с SHA
-    if result.status_code == 409:
-        get_resp = requests.get(url, headers=headers)
-        if get_resp.status_code == 200:
-            data["sha"] = get_resp.json()["sha"]
-            result = requests.put(url, headers=headers, json=data)
-    
-    # Отправляем админу результат для отладки
-    if result.status_code not in [200, 201]:
-        bot.send_message(YOUR_ADMIN_ID, f"⚠️ Ошибка GitHub API: {result.status_code}\n{full_path}\n{result.text[:200]}")
+    if get_resp.status_code == 200:
+        # Файл существует, добавляем SHA для обновления
+        data["sha"] = get_resp.json()["sha"]
+        result = requests.put(url, headers=headers, json=data)
+    elif get_resp.status_code == 404:
+        # Файла нет, создаём новый
+        data["message"] = f"Create {full_path}"
+        result = requests.put(url, headers=headers, json=data)
+    else:
+        return False
     
     return result.status_code in [200, 201]
 
@@ -149,7 +148,6 @@ def create_subscription(user_id, days):
     
     template = get_template_content()
     if not template:
-        bot.send_message(YOUR_ADMIN_ID, "❌ Не удалось загрузить all-sub.txt")
         return None
     
     filename = f"user_{user_id}"
@@ -215,8 +213,6 @@ def update_balance(user_id, amount):
     new_balance = current + amount
     data = {"user_id": user_id, "balance": new_balance, "last_updated": datetime.now().isoformat()}
     ok = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), "balances")
-    if ok:
-        bot.send_message(YOUR_ADMIN_ID, f"💰 Баланс {user_id} изменён: {current} → {new_balance}")
     return ok, new_balance
 
 def deduct_balance(user_id, amount):
@@ -227,7 +223,6 @@ def deduct_balance(user_id, amount):
     data = {"user_id": user_id, "balance": new_balance, "last_updated": datetime.now().isoformat()}
     ok = github_upload_file(f"balance_{user_id}.json", json.dumps(data, indent=2), "balances")
     if ok:
-        bot.send_message(YOUR_ADMIN_ID, f"💰 Баланс {user_id} списано {amount}, осталось {new_balance}")
         return True, new_balance
     return False, current
 
@@ -283,7 +278,7 @@ def handle_successful_payment(message):
             bot.send_message(message.from_user.id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
             bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
-# ==================== КРАСИВЫЕ КНОПКИ С ЭМОДЗИ ====================
+# ==================== КРАСИВЫЕ КНОПКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
 def locations_info(call):
     keyboard = InlineKeyboardMarkup()
@@ -398,13 +393,13 @@ def buy_command(message):
         message.chat.id,
         "💎 **ALL-SUB — ЕДИНЫЙ ТАРИФ**\n\n"
         "🌍 **Все серверы в одном конфиге**\n"
-        "• Нидерланды (3 сервера)\n"
-        "• Германия (3 сервера)\n"
-        "• Финляндия (2 сервера)\n"
-        "• Польша (3 сервера)\n"
-        "• Латвия (2 сервера)\n"
-        "• Чехия (1 сервер)\n"
-        "• США (1 сервер)\n\n"
+        "🇳🇱 Нидерланды (3 сервера) 🚀\n"
+        "🇩🇪 Германия (3 сервера) ⚡\n"
+        "🇫🇮 Финляндия (2 сервера) 🔥\n"
+        "🇵🇱 Польша (3 сервера) 💨\n"
+        "🇱🇻 Латвия (2 сервера) 🎯\n"
+        "🇨🇿 Чехия (1 сервер) 🌟\n"
+        "🇺🇸 США (1 сервер) 🌎\n\n"
         "⚡ **Выбирайте сервер в приложении v2rayNG!**\n"
         "🔒 **Встроенная блокировка рекламы**\n\n"
         "💰 **Цены:**\n"
@@ -464,7 +459,7 @@ def trial_command(message):
     link = create_subscription(user_id, 1)
     if link:
         github_upload_file(f"trial_{user_id}", "used", "trials")
-        bot.send_message(user_id, f"🎁 **Пробный период активирован!**\n\n🔗 {link}\n\n📅 1 день\n\n🌍 Все серверы доступны")
+        bot.send_message(user_id, f"🎁 **Пробный период активирован!**\n\n🔗 {link}\n\n📅 1 день\n\n🌍 16 серверов доступны")
         bot.send_message(YOUR_ADMIN_ID, f"🎁 ПРОБНЫЙ ПЕРИОД\n👤 {user_id}")
     else:
         bot.reply_to(message, "❌ Ошибка при активации")
