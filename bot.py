@@ -585,10 +585,13 @@ def start_command(message):
     
     keyboard = InlineKeyboardMarkup()
     
-    # Первая строка - ЛК (на всю ширину, синяя)
-    keyboard.add(InlineKeyboardButton("🔵 🛡️ ЛИЧНЫЙ КАБИНЕТ", callback_data="profile"))
+    # 🔵 СИНЯЯ КНОПКА ЛИЧНОГО КАБИНЕТА (на всю ширину, открывает WebApp)
+    keyboard.add(InlineKeyboardButton(
+        "🔵 🛡️ ЛИЧНЫЙ КАБИНЕТ", 
+        web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/docs/cabinet.html?user_id={message.from_user.id}")
+    ))
     
-    # Вторая строка - Купить (на всю ширину, зелёная)
+    # 🟢 Зелёная кнопка Купить VPN
     keyboard.add(InlineKeyboardButton("🟢 💰 КУПИТЬ VPN", callback_data="buy_menu"))
     
     # Третья строка - Пробный период и Поддержка
