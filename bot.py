@@ -83,16 +83,13 @@ def github_upload_file(filename, content, folder=""):
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
-    # Пробуем получить существующий файл чтобы узнать SHA
     get_resp = requests.get(url, headers=headers)
     data = {"message": f"Update {full_path}", "content": content_b64}
     
     if get_resp.status_code == 200:
-        # Файл существует, добавляем SHA для обновления
         data["sha"] = get_resp.json()["sha"]
         result = requests.put(url, headers=headers, json=data)
     elif get_resp.status_code == 404:
-        # Файла нет, создаём новый
         data["message"] = f"Create {full_path}"
         result = requests.put(url, headers=headers, json=data)
     else:
@@ -139,7 +136,6 @@ def get_template_content():
         return None
 
 def create_subscription(user_id, days):
-    # Создаём папку если нет
     folder_path = "subscriptions/all-sub"
     gitkeep_url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
@@ -248,7 +244,7 @@ def monitor_payment(user_id, amount_ton, days):
         if check_ton_transaction(amount_ton, user_id):
             link = create_subscription(user_id, days)
             if link:
-                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
+                bot.send_message(user_id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 {days} дней\n🌍 16 серверов")
                 bot.send_message(YOUR_ADMIN_ID, f"✅ ОПЛАТА TON\n👤 {user_id}\n💰 {amount_ton} TON\n📅 {days}д")
             else:
                 bot.send_message(user_id, "❌ Ошибка при создании")
@@ -275,7 +271,7 @@ def handle_successful_payment(message):
         days = int(parts[1])
         link = create_subscription(message.from_user.id, days)
         if link:
-            bot.send_message(message.from_user.id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
+            bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 {days} дней\n🌍 16 серверов")
             bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
 # ==================== КРАСИВЫЕ КНОПКИ ====================
@@ -459,7 +455,7 @@ def trial_command(message):
     link = create_subscription(user_id, 1)
     if link:
         github_upload_file(f"trial_{user_id}", "used", "trials")
-        bot.send_message(user_id, f"🎁 **Пробный период активирован!**\n\n🔗 {link}\n\n📅 1 день\n\n🌍 16 серверов доступны")
+        bot.send_message(user_id, f"🎁 **Пробный период активирован!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n📅 1 день\n🌍 16 серверов")
         bot.send_message(YOUR_ADMIN_ID, f"🎁 ПРОБНЫЙ ПЕРИОД\n👤 {user_id}")
     else:
         bot.reply_to(message, "❌ Ошибка при активации")
@@ -481,7 +477,7 @@ def refresh_config_command(message):
         return
     link = create_subscription(message.from_user.id, days_left)
     if link:
-        bot.reply_to(message, f"✅ **Конфиг обновлен!**\n\n🔗 {link}")
+        bot.reply_to(message, f"✅ **Конфиг обновлен!**\n\n🔗 **ВАША ССЫЛКА:**\n`{link}`")
     else:
         bot.reply_to(message, "❌ Ошибка при обновлении")
 
@@ -540,19 +536,19 @@ def handle_balance_payment(call):
     link = create_subscription(user_id, days)
     
     if link:
-        bot.edit_message_text(
+        bot.send_message(
+            call.message.chat.id,
             f"✅ **Подписка ALL-SUB создана!**\n\n"
             f"💰 {amount} 💵\n"
             f"💰 Остаток: {new_balance} 💵\n"
             f"📅 {days} дней\n\n"
-            f"🔗 {link}\n\n"
-            f"📱 **Как добавить подписку:**\n"
-            f"• Скопируйте ссылку\n"
+            f"🔗 **ВАША ССЫЛКА:**\n`{link}`\n\n"
+            f"📱 **Как добавить подписку в v2rayNG:**\n"
+            f"• Скопируйте ссылку выше\n"
             f"• Откройте v2rayNG\n"
             f"• Нажмите ➕ → «Добавить подписку»\n"
             f"• Вставьте ссылку → «ОК»\n"
             f"• Нажмите ▶️ и выбирайте сервер!",
-            call.message.chat.id, call.message.message_id,
             parse_mode='Markdown'
         )
         bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ\n👤 {user_id}\n💰 {amount} 💵\n📅 {days}д")
@@ -561,10 +557,10 @@ def handle_balance_payment(call):
     else:
         update_balance(user_id, amount)
         bot.edit_message_text(
+            call.message.chat.id,
             "❌ **Ошибка при создании подписки!**\n\n"
             "Средства возвращены на баланс.\n"
             "Попробуйте позже или обратитесь в поддержку.",
-            call.message.chat.id, call.message.message_id,
             parse_mode='Markdown'
         )
         bot.answer_callback_query(call.id, "❌ Ошибка", show_alert=True)
@@ -699,7 +695,7 @@ def run_web_server():
 if __name__ == "__main__":
     setup_main_menu_button()
     Thread(target=run_web_server, daemon=True).start()
-    print("✅ Бот запущен!")
+    print("✅ БОТ ЗАПУЩЕН!")
     print("📦 ALL-SUB — конфиг из all-sub.txt")
     print("💰 Цены: 30д = 2 TON / 200⭐ / 200💵")
     while True:
