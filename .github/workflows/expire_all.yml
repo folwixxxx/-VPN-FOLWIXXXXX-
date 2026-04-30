@@ -2,8 +2,8 @@ name: Auto-Expire and Update Subscriptions
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-    - cron: '0 */6 * * *'
+    - cron: '*/5 * * * *'      # Проверка истечения каждые 5 минут
+    - cron: '0 */6 * * *'      # Обновление конфигов каждые 6 часов
   workflow_dispatch:
 
 jobs:
@@ -24,9 +24,11 @@ jobs:
           EXPIRED_COUNT=0
           ACTIVE_COUNT=0
           
+          # Только папки all-sub и trial-sub (старые удалены)
           for folder in all-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
-              for expiry_file in subscriptions/$folder/*.expiry; do
+              echo "📁 Checking folder: $folder"
+              for expiry_file in subscriptions/$folder/user_*.expiry; do
                 [ ! -f "$expiry_file" ] && continue
                 
                 username=$(basename "$expiry_file" .expiry)
@@ -34,14 +36,21 @@ jobs:
                 EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
                 EXPIRE_DATE=$(date -d "@$EXPIRE" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "unknown")
                 
+                if [ -z "$EXPIRE" ]; then
+                  echo "⚠️ Empty expiry file: $expiry_file"
+                  continue
+                fi
+                
                 if [ $NOW -gt $EXPIRE ]; then
-                  echo "❌ $folder/$username: expired (was until $EXPIRE_DATE)"
+                  echo "❌ $folder/$username: EXPIRED (was until $EXPIRE_DATE)"
                   EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
                   
+                  # Удаляем истекшие файлы
                   rm -f "$data_file"
                   rm -f "$expiry_file"
                   rm -f "subscriptions/$folder/${username}.type" 2>/dev/null
                   
+                  # Создаём пустышку (чтобы не было 404)
                   echo "# profile-title: ❌ SUBSCRIPTION EXPIRED ❌" > "$data_file"
                   echo "# profile-update-interval: 5" >> "$data_file"
                   echo "# status: EXPIRED" >> "$data_file"
@@ -49,14 +58,15 @@ jobs:
                   echo "" >> "$data_file"
                   echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED" >> "$data_file"
                   
-                  echo "   ✅ Dummy file created"
+                  echo "   ✅ Dummy file created for $username"
                 else
                   DAYS_LEFT=$(( ($EXPIRE - $NOW) / 86400 ))
-                  echo "✅ $folder/$username: active until $EXPIRE_DATE, $DAYS_LEFT days left"
+                  echo "✅ $folder/$username: ACTIVE until $EXPIRE_DATE, $DAYS_LEFT days left"
                   ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
                 fi
               done
             else
+              echo "📁 Creating folder: subscriptions/$folder"
               mkdir -p "subscriptions/$folder"
             fi
           done
@@ -64,24 +74,45 @@ jobs:
           echo ""
           echo "📊 RESULTS: Active: $ACTIVE_COUNT, Expired: $EXPIRED_COUNT"
 
+      - name: 🗑️ Clean old subscription folders (def-sub, ultra-sub, full-sub, fast-sub)
+        run: |
+          echo "🧹 Cleaning old subscription folders..."
+          for old_folder in def-sub ultra-sub full-sub fast-sub custom-sub; do
+            if [ -d "subscriptions/$old_folder" ]; then
+              echo "🗑️ Removing old folder: subscriptions/$old_folder"
+              rm -rf "subscriptions/$old_folder"
+            fi
+          done
+          
+          # Также удаляем старые шаблоны если есть
+          for old_template in def-sub.txt ultra-sub.txt fast-sub.txt template.txt; do
+            if [ -f "$old_template" ]; then
+              echo "🗑️ Removing old template: $old_template"
+              rm -f "$old_template"
+            fi
+          done
+
       - name: 🧹 Clean orphaned files
         run: |
           for folder in all-sub trial-sub; do
             if [ -d "subscriptions/$folder" ]; then
+              echo "🧹 Checking orphaned files in $folder"
               for txt_file in subscriptions/$folder/user_*.txt; do
                 [ ! -f "$txt_file" ] && continue
                 username=$(basename "$txt_file" .txt)
                 expiry_file="subscriptions/$folder/${username}.expiry"
                 
+                # Если нет expiry файла и это не пустышка
                 if [ ! -f "$expiry_file" ]; then
                   if ! grep -q "EXPIRED" "$txt_file"; then
-                    echo "⚠️ Fixing: $txt_file (no expiry)"
+                    echo "⚠️ Fixing: $txt_file (no expiry file)"
                     rm -f "$txt_file"
                     echo "# profile-title: ❌ SUBSCRIPTION EXPIRED ❌" > "$txt_file"
                     echo "# profile-update-interval: 5" >> "$txt_file"
                     echo "# status: EXPIRED" >> "$txt_file"
                     echo "" >> "$txt_file"
                     echo "vless://00000000-0000-0000-0000-000000000000@0.0.0.0:1?encryption=none#EXPIRED" >> "$txt_file"
+                    echo "   ✅ Fixed with dummy file"
                   fi
                 fi
               done
@@ -97,6 +128,8 @@ jobs:
           if ! git diff --quiet --staged; then
             git commit -m "⏰ Auto-expire $(date +'%Y-%m-%d %H:%M:%S')"
             git push
+          else
+            echo "ℹ️ No changes to commit"
           fi
 
   update-active-configs:
@@ -121,30 +154,47 @@ jobs:
             echo "ℹ️ Template not changed"
           fi
       
-      - name: 🔄 Update active subscriptions
+      - name: 🔄 Update active ALL-SUB subscriptions
         if: steps.check_templates.outputs.changed == 'true'
         run: |
           NOW=$(date +%s)
           UPDATED=0
           
-          echo "🔄 STARTING UPDATE"
+          echo "🔄 STARTING UPDATE - ALL-SUB"
           echo "📅 Time: $(date)"
           
-          if [ -f "all-sub.txt" ] && [ -d "subscriptions/all-sub" ]; then
-            for expiry in subscriptions/all-sub/*.expiry; do
-              [ ! -f "$expiry" ] && continue
-              EXPIRE=$(cat "$expiry")
-              [ $EXPIRE -lt $NOW ] && continue
-              username=$(basename "$expiry" .expiry)
-              cp "all-sub.txt" "subscriptions/all-sub/${username}.txt"
-              sed -i "s/❀VPN USER❀/❀ALL-SUB ${username}❀/g" "subscriptions/all-sub/${username}.txt"
-              echo "# Updated: $(date '+%Y-%m-%d %H:%M:%S')" >> "subscriptions/all-sub/${username}.txt"
-              echo "🔄 all-sub/$username"
-              UPDATED=$((UPDATED + 1))
-            done
+          if [ ! -f "all-sub.txt" ]; then
+            echo "❌ Template all-sub.txt not found!"
+            exit 1
           fi
           
-          echo "📊 Updated: $UPDATED"
+          if [ ! -d "subscriptions/all-sub" ]; then
+            echo "❌ Folder subscriptions/all-sub not found!"
+            mkdir -p subscriptions/all-sub
+          fi
+          
+          for expiry in subscriptions/all-sub/user_*.expiry; do
+            [ ! -f "$expiry" ] && continue
+            EXPIRE=$(cat "$expiry")
+            if [ -z "$EXPIRE" ]; then
+              echo "⚠️ Empty expiry file: $expiry"
+              continue
+            fi
+            if [ $EXPIRE -lt $NOW ]; then
+              echo "⏭️ Skipping expired: $expiry"
+              continue
+            fi
+            username=$(basename "$expiry" .expiry)
+            username=$(echo "$username" | sed 's/user_//')
+            
+            echo "🔄 Updating config for user_$username"
+            cp "all-sub.txt" "subscriptions/all-sub/user_${username}.txt"
+            sed -i "s/❀VPN USER❀/❀ALL-SUB ${username}❀/g" "subscriptions/all-sub/user_${username}.txt"
+            echo "# Updated: $(date '+%Y-%m-%d %H:%M:%S')" >> "subscriptions/all-sub/user_${username}.txt"
+            UPDATED=$((UPDATED + 1))
+          done
+          
+          echo "📊 Updated ALL-SUB subscriptions: $UPDATED"
 
       - name: 💾 Commit updates
         if: steps.check_templates.outputs.changed == 'true'
@@ -155,6 +205,8 @@ jobs:
           if ! git diff --quiet --staged; then
             git commit -m "🔄 Auto-update subscriptions $(date +'%Y-%m-%d %H:%M:%S')"
             git push
+          else
+            echo "ℹ️ No updates to commit"
           fi
 
   clean-trial-subscriptions:
@@ -175,20 +227,26 @@ jobs:
           echo "🕐 Time: $(date)"
           
           if [ -d "subscriptions/trial-sub" ]; then
-            for expiry_file in subscriptions/trial-sub/*.expiry; do
+            for expiry_file in subscriptions/trial-sub/user_*.expiry; do
               [ ! -f "$expiry_file" ] && continue
               EXPIRE=$(cat "$expiry_file" | tr -d ' \n\r')
+              if [ -z "$EXPIRE" ]; then
+                echo "⚠️ Empty expiry file: $expiry_file"
+                continue
+              fi
               if [ $NOW -gt $EXPIRE ]; then
                 username=$(basename "$expiry_file" .expiry)
-                echo "🗑️ Deleting expired trial: $username"
+                username=$(echo "$username" | sed 's/user_//')
+                echo "🗑️ Deleting expired trial: user_$username"
                 rm -f "$expiry_file"
-                rm -f "subscriptions/trial-sub/${username}.txt"
-                rm -f "subscriptions/trial-sub/${username}.type" 2>/dev/null
+                rm -f "subscriptions/trial-sub/user_${username}.txt"
+                rm -f "subscriptions/trial-sub/user_${username}.type" 2>/dev/null
                 CLEANED=$((CLEANED + 1))
               fi
             done
           fi
           
+          # Очистка старых флагов пробного периода (старше 30 дней)
           if [ -d "trials" ]; then
             for trial_flag in trials/trial_*; do
               [ ! -f "$trial_flag" ] && continue
@@ -211,4 +269,6 @@ jobs:
           if ! git diff --quiet --staged; then
             git commit -m "🧹 Clean expired trials $(date +'%Y-%m-%d %H:%M:%S')"
             git push
+          else
+            echo "ℹ️ No trials to clean"
           fi
