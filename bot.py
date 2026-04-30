@@ -16,7 +16,6 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main"
-API_BASE = f"https://api.github.com/repos/{GITHUB_REPO}"
 TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
@@ -78,16 +77,9 @@ def generate_user_token(user_id, expiry_timestamp):
 def verify_user_token(user_id, token, expiry_timestamp):
     return hmac.compare_digest(generate_user_token(user_id, expiry_timestamp), token)
 
-def ensure_folder(folder_path):
-    url = f"{API_BASE}/contents/{folder_path}/.gitkeep"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    data = {"message": f"Create folder {folder_path}", "content": base64.b64encode(b"").decode('utf-8')}
-    resp = requests.put(url, headers=headers, json=data)
-    return resp.status_code in [200, 201, 409]
-
 def github_upload_file(filename, content, folder=""):
     full_path = f"{folder}/{filename}" if folder else filename
-    url = f"{API_BASE}/contents/{full_path}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{full_path}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
     
@@ -103,7 +95,7 @@ def github_upload_file(filename, content, folder=""):
     return result.status_code in [200, 201]
 
 def github_get_file_content(filepath):
-    url = f"{API_BASE}/contents/{filepath}"
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{filepath}"
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     try:
         resp = requests.get(url, headers=headers)
@@ -131,37 +123,23 @@ def save_user(user_id):
     return False
 
 def get_template_content():
-    """Берёт шаблон ТОЛЬКО из файла all-sub.txt в КОРНЕ репозитория"""
     url = f"{RAW_BASE}/all-sub.txt"
-    print(f"📥 Загружаем шаблон: {url}")
-    try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            print(f"✅ Шаблон загружен, длина: {len(resp.text)}")
-            return resp.text
-        else:
-            print(f"❌ Ошибка {resp.status_code}")
-            return None
-    except Exception as e:
-        print(f"❌ Исключение: {e}")
-        return None
+    resp = requests.get(url, timeout=10)
+    if resp.status_code == 200:
+        return resp.text
+    return None
 
 def create_subscription(user_id, days):
-    """Создаёт подписку из шаблона all-sub.txt"""
-    ensure_folder("subscriptions/all-sub")
-    
     filename = f"user_{user_id}"
     folder = "all-sub"
     
     template = get_template_content()
     if not template:
-        bot.send_message(YOUR_ADMIN_ID, f"❌ **НЕТ ШАБЛОНА all-sub.txt**\n\nНе удалось загрузить файл из репозитория:\n{RAW_BASE}/all-sub.txt")
         return None
     
     expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
     expiry_date_str = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     
-    # Заменяем плейсхолдер
     config_content = template.replace("❀VPN USER❀", f"ALL-SUB {user_id}")
     config_content += f"\n# Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
     config_content += f"# Expires: {expiry_date_str}\n"
@@ -182,7 +160,6 @@ def create_subscription(user_id, days):
     github_upload_file(f"{filename}.type", "all", f"subscriptions/{folder}")
     
     if not (success1 and success2):
-        print(f"❌ Ошибка загрузки: success1={success1}, success2={success2}")
         return None
     
     token = generate_user_token(user_id, expiry_timestamp)
@@ -205,9 +182,8 @@ def get_user_subscription_info(user_id):
             return None, None, None
     return None, None, None
 
-# ==================== БАЛАНС ====================
+# ==================== БАЛАНС (ПРОСТОЕ РЕШЕНИЕ) ====================
 def get_balance(user_id):
-    ensure_folder("balances")
     content = github_get_file_content(f"balances/balance_{user_id}.json")
     if not content:
         return 0
@@ -255,7 +231,6 @@ def monitor_payment(user_id, amount_ton, days):
     start = time.time()
     while time.time() - start < 600:
         if check_ton_transaction(amount_ton, user_id):
-            bot.send_message(user_id, f"✅ Оплата {amount_ton} TON получена!")
             link = create_subscription(user_id, days)
             if link:
                 bot.send_message(user_id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 {days} дней")
@@ -288,34 +263,23 @@ def handle_successful_payment(message):
             bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 {days} дней")
             bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
-# ==================== НОВЫЕ КНОПКИ ====================
+# ==================== КНОПКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'locations')
 def locations_info(call):
-    caption = (
-        "📍 **ЛОКАЦИИ И ИХ НАЗНАЧЕНИЕ**\n\n"
-        "Мы подготовили для вас статью, которая подробно разбирает,\n"
-        "как выбрать локацию в вашей подписке под разные задачи.\n\n"
-        "👇 **Нажмите на кнопку ниже, чтобы прочитать статью**"
-    )
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📖 Читать статью", url="https://teletype.in/@ylvv/location"))
+    keyboard.add(InlineKeyboardButton("📖 Читать", url="https://teletype.in/@ylvv/location"))
     keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
+    bot.send_photo(call.message.chat.id, LOCATIONS_IMAGE_URL, caption="📍 **ЛОКАЦИИ**", reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'privacy_policy')
 def privacy_policy(call):
-    text = (
-        "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**\n\n"
-        "👇 **Нажмите на кнопку ниже, чтобы ознакомиться с полной версией**"
-    )
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("📄 Читать", url="https://teletype.in/@ylvv/politica"))
     keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    bot.send_message(call.message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
+    bot.send_message(call.message.chat.id, "📚 **ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ**", reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
-# ==================== КНОПКИ ГЛАВНОГО МЕНЮ ====================
 def setup_main_menu_button():
     try:
         bot.set_my_commands([
@@ -328,45 +292,16 @@ def setup_main_menu_button():
     except:
         pass
 
-# ==================== ОСНОВНЫЕ КОМАНДЫ ====================
 @bot.message_handler(commands=['start'])
 @require_subscription
 def start_command(message):
     save_user(message.from_user.id)
     keyboard = InlineKeyboardMarkup(row_width=2)
-    keyboard.row(
-        InlineKeyboardButton("👤 Профиль", callback_data="profile"),
-        InlineKeyboardButton("💰 Купить VPN", callback_data="buy_menu")
-    )
-    keyboard.row(
-        InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
-        InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
-    )
-    keyboard.row(
-        InlineKeyboardButton("⚠️ Канал с новостями", url=CHANNEL_URL),
-        InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
-    )
-    keyboard.row(
-        InlineKeyboardButton("📍 Локации", callback_data="locations"),
-        InlineKeyboardButton("📚 Политика", callback_data="privacy_policy")
-    )
-    
-    caption = (
-        "💻 **Добро пожаловать в FOLWIXXX VPN сервис!**\n\n"
-        "✅ Быстрые серверы\n"
-        "✅ Обход ограничений\n"
-        "✅ Безлимитный трафик\n\n"
-        "**📦 ALL-SUB — ЕДИНЫЙ ТАРИФ**\n"
-        "🌍 **Все серверы**\n"
-        "⚡ **Выбирайте сервер в приложении**\n"
-        "🔒 **Блокировка рекламы и трекеров**\n\n"
-        "💰 **Цены:**\n"
-        "• 30 дней — 2 TON / 200⭐ / 200💵\n"
-        "• 60 дней — 3.5 TON / 350⭐ / 350💵\n"
-        "• 90 дней — 5 TON / 500⭐ / 500💵\n\n"
-        "🎁 **Пробный период 1 день — бесплатно!**\n\n"
-        "👇 Выберите действие"
-    )
+    keyboard.row(InlineKeyboardButton("👤 Профиль", callback_data="profile"), InlineKeyboardButton("💰 Купить", callback_data="buy_menu"))
+    keyboard.row(InlineKeyboardButton("🎁 Пробный", callback_data="trial"), InlineKeyboardButton("🛠️ Поддержка", callback_data="support"))
+    keyboard.row(InlineKeyboardButton("⚠️ Канал", url=CHANNEL_URL), InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")))
+    keyboard.row(InlineKeyboardButton("📍 Локации", callback_data="locations"), InlineKeyboardButton("📚 Политика", callback_data="privacy_policy"))
+    caption = ("💻 **FOLWIXXX VPN**\n\n📦 ALL-SUB\n🌍 Все серверы\n💰 30д: 2 TON / 200⭐ / 200💵\n🎁 Пробный 1 день")
     try:
         bot.send_photo(message.chat.id, BANNER_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     except:
@@ -382,23 +317,18 @@ def profile_command(message):
     if days_left:
         keyboard.add(InlineKeyboardButton("🔄 Обновить", callback_data="refresh_config_profile"))
     keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    
     text = f"👤 **ПРОФИЛЬ**\n\n🆔 `{user_id}`\n💰 Баланс: {balance} 💵\n"
     if days_left:
         text += f"📦 ALL-SUB ✅ Активна\n📅 Осталось: {days_left} дней\n📅 До: {expiry_date}\n🔗 {link}"
     else:
-        text += "📅 Статус: ❌ Нет подписки\n\n💡 /buy"
+        text += "📅 Статус: ❌ Нет подписки"
     bot.send_message(message.chat.id, text, reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['buy'])
 @require_subscription
 def buy_command(message):
     keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("📆 30 дней", callback_data="buy_30"),
-        InlineKeyboardButton("📆 60 дней", callback_data="buy_60"),
-        InlineKeyboardButton("📆 90 дней", callback_data="buy_90")
-    )
+    keyboard.row(InlineKeyboardButton("📆 30", callback_data="buy_30"), InlineKeyboardButton("📆 60", callback_data="buy_60"), InlineKeyboardButton("📆 90", callback_data="buy_90"))
     keyboard.row(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
     bot.send_message(message.chat.id, "💎 **ALL-SUB**\n\n💰 30д: 2 TON / 200⭐ / 200💵\n💰 60д: 3.5 TON / 350⭐ / 350💵\n💰 90д: 5 TON / 500⭐ / 500💵", reply_markup=keyboard, parse_mode='Markdown')
 
@@ -417,19 +347,9 @@ def buy_90(call):
 def process_payment(call, days, ton, stars, bal):
     pending_payments[call.from_user.id] = {"days": days}
     keyboard = InlineKeyboardMarkup()
-    keyboard.row(
-        InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{ton}"),
-        InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars}")
-    )
-    keyboard.row(
-        InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{bal}"),
-        InlineKeyboardButton("◀️ Назад", callback_data="buy_menu")
-    )
-    bot.edit_message_text(
-        f"💳 **Способ оплаты**\n\n📅 {days} дней\n💎 TON: {ton}\n⭐ Stars: {stars}\n💰 Баланс: {bal} 💵",
-        call.message.chat.id, call.message.message_id,
-        reply_markup=keyboard, parse_mode='Markdown'
-    )
+    keyboard.row(InlineKeyboardButton("💎 TON", callback_data=f"ton_{days}_{ton}"), InlineKeyboardButton("⭐ Stars", callback_data=f"stars_{days}_{stars}"))
+    keyboard.row(InlineKeyboardButton("💰 Баланс", callback_data=f"balance_{days}_{bal}"), InlineKeyboardButton("◀️ Назад", callback_data="buy_menu"))
+    bot.edit_message_text(f"💳 **Оплата {days} дней**\n\n💎 TON: {ton}\n⭐ Stars: {stars}\n💰 Баланс: {bal} 💵", call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
 @bot.message_handler(commands=['trial'])
@@ -437,7 +357,7 @@ def process_payment(call, days, ton, stars, bal):
 def trial_command(message):
     user_id = message.from_user.id
     if github_get_file_content(f"trials/trial_{user_id}"):
-        bot.reply_to(message, "❌ Уже использовали пробный!")
+        bot.reply_to(message, "❌ Уже использовали!")
         return
     days_left, _, _ = get_user_subscription_info(user_id)
     if days_left:
@@ -457,7 +377,7 @@ def support_command(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("📩 Написать", url=f"https://t.me/{YOUR_USERNAME}"))
     keyboard.add(InlineKeyboardButton("◀️ Назад", callback_data="back_to_main"))
-    bot.send_message(message.chat.id, "🛠️ **ПОДДЕРЖКА**\n\nПроблемы? Пишите!", reply_markup=keyboard, parse_mode='Markdown')
+    bot.send_message(message.chat.id, "🛠️ **ПОДДЕРЖКА**", reply_markup=keyboard, parse_mode='Markdown')
 
 @bot.message_handler(commands=['refresh_config'])
 @require_subscription
@@ -472,7 +392,7 @@ def refresh_config_command(message):
     else:
         bot.reply_to(message, "❌ Ошибка")
 
-# ==================== АДМИН КОМАНДЫ ====================
+# ==================== АДМИН ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
     if message.from_user.id != YOUR_ADMIN_ID:
@@ -493,7 +413,7 @@ def admin_add_balance(message):
             bot.reply_to(message, f"✅ Баланс `{user_id}` +{amount} 💵\n💰 Теперь: {new_balance} 💵", parse_mode='Markdown')
             bot.send_message(user_id, f"🎉 **Баланс пополнен!**\n\n💰 +{amount} 💵\n💰 Баланс: {new_balance} 💵", parse_mode='Markdown')
     except:
-        bot.reply_to(message, "❌ Ошибка формата")
+        bot.reply_to(message, "❌ Ошибка")
 
 @bot.message_handler(commands=['users_count'])
 def users_count(message):
@@ -525,15 +445,7 @@ def handle_balance_payment(call):
     link = create_subscription(user_id, days)
     
     if link:
-        bot.edit_message_text(
-            f"✅ **Подписка создана!**\n\n"
-            f"💰 {amount} 💵\n"
-            f"💰 Остаток: {new_balance} 💵\n"
-            f"📅 {days} дней\n\n"
-            f"🔗 {link}",
-            call.message.chat.id, call.message.message_id,
-            parse_mode='Markdown'
-        )
+        bot.edit_message_text(f"✅ **Подписка создана!**\n\n💰 {amount} 💵\n💰 Остаток: {new_balance} 💵\n📅 {days} дней\n\n🔗 {link}", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
         bot.send_message(YOUR_ADMIN_ID, f"💰 ОПЛАТА БАЛАНСОМ\n👤 {user_id}\n💰 {amount} 💵\n📅 {days}д")
         bot.answer_callback_query(call.id, "✅ Готово!")
         pending_payments.pop(user_id, None)
@@ -551,11 +463,7 @@ def handle_ton_payment(call):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅ Перевел", callback_data=f"check_{days}_{amount}"))
     keyboard.add(InlineKeyboardButton("❌ Отмена", callback_data="cancel"))
-    bot.edit_message_text(
-        f"💳 **Оплата TON**\n\n💰 {amount} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Перевел»",
-        call.message.chat.id, call.message.message_id,
-        reply_markup=keyboard, parse_mode='Markdown'
-    )
+    bot.edit_message_text(f"💳 **Оплата TON**\n\n💰 {amount} TON\n📅 {days} дней\n\n**Кошелёк:**\n`{TON_WALLET}`\n\nПереведите и нажмите «✅ Перевел»", call.message.chat.id, call.message.message_id, reply_markup=keyboard, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('stars_'))
@@ -589,24 +497,20 @@ def support(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'profile')
 def profile(call):
-    class FakeMessage:
-        def __init__(self, user_id, chat_id):
-            self.from_user = type('obj', (object,), {'id': user_id})()
-            self.chat = type('obj', (object,), {'id': chat_id})()
-            self.id = None
-    fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
-    profile_command(fake_msg)
+    class Fake:
+        def __init__(self, uid, cid):
+            self.from_user = type('obj', (object,), {'id': uid})()
+            self.chat = type('obj', (object,), {'id': cid})()
+    profile_command(Fake(call.from_user.id, call.message.chat.id))
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'refresh_config_profile')
 def refresh_profile(call):
-    class FakeMessage:
-        def __init__(self, user_id, chat_id):
-            self.from_user = type('obj', (object,), {'id': user_id})()
-            self.chat = type('obj', (object,), {'id': chat_id})()
-            self.id = None
-    fake_msg = FakeMessage(call.from_user.id, call.message.chat.id)
-    refresh_config_command(fake_msg)
+    class Fake:
+        def __init__(self, uid, cid):
+            self.from_user = type('obj', (object,), {'id': uid})()
+            self.chat = type('obj', (object,), {'id': cid})()
+    refresh_config_command(Fake(call.from_user.id, call.message.chat.id))
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'buy_menu')
@@ -666,11 +570,8 @@ def run_web_server():
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
     setup_main_menu_button()
-    web_thread = Thread(target=run_web_server, daemon=True)
-    web_thread.start()
+    Thread(target=run_web_server, daemon=True).start()
     print("✅ Бот запущен!")
-    print("📦 ALL-SUB — конфиг из all-sub.txt")
-    print("💰 30д: 2 TON / 200⭐ / 200💵")
     while True:
         try:
             bot.infinity_polling(timeout=60)
