@@ -124,10 +124,13 @@ def save_user(user_id):
 
 def get_template_content():
     url = f"{RAW_BASE}/all-sub.txt"
-    resp = requests.get(url, timeout=10)
-    if resp.status_code == 200:
-        return resp.text
-    return None
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            return resp.text
+        return None
+    except:
+        return None
 
 def create_subscription(user_id, days):
     filename = f"user_{user_id}"
@@ -182,7 +185,7 @@ def get_user_subscription_info(user_id):
             return None, None, None
     return None, None, None
 
-# ==================== БАЛАНС (ПРОСТОЕ РЕШЕНИЕ) ====================
+# ==================== БАЛАНС ====================
 def get_balance(user_id):
     content = github_get_file_content(f"balances/balance_{user_id}.json")
     if not content:
@@ -233,10 +236,10 @@ def monitor_payment(user_id, amount_ton, days):
         if check_ton_transaction(amount_ton, user_id):
             link = create_subscription(user_id, days)
             if link:
-                bot.send_message(user_id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 {days} дней")
+                bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
                 bot.send_message(YOUR_ADMIN_ID, f"✅ ОПЛАТА TON\n👤 {user_id}\n💰 {amount_ton} TON\n📅 {days}д")
             else:
-                bot.send_message(user_id, "❌ Ошибка при создании")
+                bot.send_message(user_id, "❌ Ошибка")
             return True
         time.sleep(15)
     bot.send_message(user_id, "⏰ Время оплаты истекло")
@@ -260,7 +263,7 @@ def handle_successful_payment(message):
         days = int(parts[1])
         link = create_subscription(message.from_user.id, days)
         if link:
-            bot.send_message(message.from_user.id, f"✅ **Подписка ALL-SUB создана!**\n\n🔗 {link}\n\n📅 {days} дней")
+            bot.send_message(message.from_user.id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
             bot.send_message(YOUR_ADMIN_ID, f"⭐ ОПЛАТА STARS\n👤 {message.from_user.id}\n⭐ {parts[2]}\n📅 {days}д")
 
 # ==================== КНОПКИ ====================
@@ -301,7 +304,7 @@ def start_command(message):
     keyboard.row(InlineKeyboardButton("🎁 Пробный", callback_data="trial"), InlineKeyboardButton("🛠️ Поддержка", callback_data="support"))
     keyboard.row(InlineKeyboardButton("⚠️ Канал", url=CHANNEL_URL), InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}")))
     keyboard.row(InlineKeyboardButton("📍 Локации", callback_data="locations"), InlineKeyboardButton("📚 Политика", callback_data="privacy_policy"))
-    caption = ("💻 **FOLWIXXX VPN**\n\n📦 ALL-SUB\n🌍 Все серверы\n💰 30д: 2 TON / 200⭐ / 200💵\n🎁 Пробный 1 день")
+    caption = ("💻 **FOLWIXXX VPN**\n\n📦 ALL-SUB\n🌍 16 серверов\n💰 30д: 2 TON / 200⭐ / 200💵\n🎁 Пробный 1 день")
     try:
         bot.send_photo(message.chat.id, BANNER_URL, caption=caption, reply_markup=keyboard, parse_mode='Markdown')
     except:
