@@ -175,7 +175,6 @@ def create_subscription(user_id, days):
     if not (success1 and success2):
         return None
     
-    # ВОЗВРАЩАЕМ ССЫЛКУ БЕЗ ТОКЕНА
     return f"{RAW_BASE}/{folder_path}/{filename}.txt?t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
@@ -296,7 +295,7 @@ def setup_main_menu_button():
     try:
         bot.set_my_commands([
             BotCommand("start", "🏠 Главное меню"),
-            BotCommand("profile", "👤 Мой профиль"),
+            BotCommand("profile", "🛡️ Личный кабинет"),
             BotCommand("buy", "💰 Купить VPN"),
             BotCommand("trial", "🎁 Пробный период"),
             BotCommand("support", "🛠️ Поддержка"),
@@ -310,18 +309,26 @@ def setup_main_menu_button():
 def start_command(message):
     save_user(message.from_user.id)
     keyboard = InlineKeyboardMarkup(row_width=2)
+    
+    # Первая строка: две кнопки во всю ширину
     keyboard.row(
-        InlineKeyboardButton("👤 Мой профиль", callback_data="profile"),
+        InlineKeyboardButton("🛡️ Личный кабинет", callback_data="profile"),
         InlineKeyboardButton("💰 Купить VPN", callback_data="buy_menu")
     )
+    
+    # Вторая строка: пробный период и поддержка
     keyboard.row(
         InlineKeyboardButton("🎁 Пробный период", callback_data="trial"),
         InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     )
+    
+    # Третья строка: канал и инструкция
     keyboard.row(
         InlineKeyboardButton("📢 Наш канал", url=CHANNEL_URL),
         InlineKeyboardButton("📱 Инструкция", web_app=WebAppInfo(url=f"https://folwixxxx.github.io/-VPN-FOLWIXXXXX-/instructions.html?user_id={message.from_user.id}"))
     )
+    
+    # Четвёртая строка: локации и политика
     keyboard.row(
         InlineKeyboardButton("📍 Локации", callback_data="locations"),
         InlineKeyboardButton("📚 Политика", callback_data="privacy_policy")
