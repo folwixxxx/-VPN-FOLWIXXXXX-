@@ -11,7 +11,6 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice, BotCommand, BotCommandScopeDefault, WebAppInfo
 from flask import Flask, request, Response
 
-# ==================== ТОКЕНЫ ====================
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
@@ -20,21 +19,18 @@ TON_WALLET = os.environ.get("TON_WALLET")
 TON_API_KEY = os.environ.get("TON_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY", "default_secret_key_change_me_12345")
 
-# ==================== ЦЕНЫ ====================
 PRICES = {
     30: {"ton": 2.0, "stars": 200, "balance": 200},
     60: {"ton": 3.5, "stars": 350, "balance": 350},
     90: {"ton": 5.0, "stars": 500, "balance": 500}
 }
 
-# ==================== КАНАЛ ====================
 REQUIRED_CHANNEL = "folwixxxvpn"
 CHANNEL_URL = f"https://t.me/{REQUIRED_CHANNEL}"
 
 if not all([TELEGRAM_TOKEN, GITHUB_TOKEN, GITHUB_REPO, TON_WALLET, TON_API_KEY]):
     raise Exception("❌ Ошибка: не все переменные окружения заданы!")
 
-# ==================== ИНИЦИАЛИЗАЦИЯ ====================
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 pending_payments = {}
 
@@ -128,17 +124,26 @@ def get_template_content():
         resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
             return resp.text
+        bot.send_message(YOUR_ADMIN_ID, f"❌ Не могу загрузить all-sub.txt\nURL: {url}\nСтатус: {resp.status_code}")
         return None
-    except:
+    except Exception as e:
+        bot.send_message(YOUR_ADMIN_ID, f"❌ Ошибка загрузки all-sub.txt: {e}")
         return None
 
 def create_subscription(user_id, days):
-    filename = f"user_{user_id}"
+    # Сначала создаём папку, если её нет
     folder = "all-sub"
+    folder_path = f"subscriptions/{folder}"
+    gitkeep_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{folder_path}/.gitkeep"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    gitkeep_data = {"message": "Create folder", "content": base64.b64encode(b"").decode('utf-8')}
+    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
     
     template = get_template_content()
     if not template:
         return None
+    
+    filename = f"user_{user_id}"
     
     expiry_timestamp = int((datetime.now() + timedelta(days=days)).timestamp())
     expiry_date_str = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
@@ -158,15 +163,15 @@ def create_subscription(user_id, days):
 """
     full_content = header + config_content
     
-    success1 = github_upload_file(f"{filename}.txt", full_content, f"subscriptions/{folder}")
-    success2 = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), f"subscriptions/{folder}")
-    github_upload_file(f"{filename}.type", "all", f"subscriptions/{folder}")
+    success1 = github_upload_file(f"{filename}.txt", full_content, folder_path)
+    success2 = github_upload_file(f"{filename}.expiry", str(expiry_timestamp), folder_path)
+    github_upload_file(f"{filename}.type", "all", folder_path)
     
     if not (success1 and success2):
         return None
     
     token = generate_user_token(user_id, expiry_timestamp)
-    return f"{RAW_BASE}/subscriptions/{folder}/{filename}.txt?token={token}&t={int(time.time())}"
+    return f"{RAW_BASE}/{folder_path}/{filename}.txt?token={token}&t={int(time.time())}"
 
 def get_user_subscription_info(user_id):
     content = github_get_file_content(f"subscriptions/all-sub/user_{user_id}.expiry")
@@ -185,7 +190,6 @@ def get_user_subscription_info(user_id):
             return None, None, None
     return None, None, None
 
-# ==================== БАЛАНС ====================
 def get_balance(user_id):
     content = github_get_file_content(f"balances/balance_{user_id}.json")
     if not content:
@@ -196,6 +200,12 @@ def get_balance(user_id):
         return 0
 
 def update_balance(user_id, amount):
+    # Создаём папку balances если её нет
+    gitkeep_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/balances/.gitkeep"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    gitkeep_data = {"message": "Create balances folder", "content": base64.b64encode(b"").decode('utf-8')}
+    requests.put(gitkeep_url, headers=headers, json=gitkeep_data)
+    
     current = get_balance(user_id)
     new_balance = current + amount
     data = {"user_id": user_id, "balance": new_balance, "updated": datetime.now().isoformat()}
@@ -213,7 +223,6 @@ def deduct_balance(user_id, amount):
         return True, new_balance
     return False, current
 
-# ==================== TON & STARS ====================
 def check_ton_transaction(amount_ton, user_id):
     try:
         resp = requests.get("https://toncenter.com/api/v2/getTransactions", params={"address": TON_WALLET, "limit": 20, "api_key": TON_API_KEY}, timeout=30)
@@ -239,7 +248,7 @@ def monitor_payment(user_id, amount_ton, days):
                 bot.send_message(user_id, f"✅ **Подписка создана!**\n\n🔗 {link}\n\n📅 {days} дней")
                 bot.send_message(YOUR_ADMIN_ID, f"✅ ОПЛАТА TON\n👤 {user_id}\n💰 {amount_ton} TON\n📅 {days}д")
             else:
-                bot.send_message(user_id, "❌ Ошибка")
+                bot.send_message(user_id, "❌ Ошибка при создании")
             return True
         time.sleep(15)
     bot.send_message(user_id, "⏰ Время оплаты истекло")
@@ -395,7 +404,6 @@ def refresh_config_command(message):
     else:
         bot.reply_to(message, "❌ Ошибка")
 
-# ==================== АДМИН ====================
 @bot.message_handler(commands=['pay'])
 def admin_add_balance(message):
     if message.from_user.id != YOUR_ADMIN_ID:
@@ -426,7 +434,6 @@ def users_count(message):
     users = get_all_users()
     bot.reply_to(message, f"👥 Пользователей: {len(users)}")
 
-# ==================== ОПЛАТА БАЛАНСОМ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('balance_'))
 def handle_balance_payment(call):
     parts = call.data.split('_')
@@ -492,7 +499,6 @@ def cancel_payment(call):
     bot.edit_message_text("❌ Отменено", call.message.chat.id, call.message.message_id)
     bot.answer_callback_query(call.id)
 
-# ==================== CALLBACKИ ====================
 @bot.callback_query_handler(func=lambda call: call.data == 'support')
 def support(call):
     support_command(call.message)
@@ -538,7 +544,6 @@ def send_user_info_to_admin(message):
     except:
         pass
 
-# ==================== ВЕБ-СЕРВЕР ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -570,7 +575,6 @@ def get_user_config(user_id):
 def run_web_server():
     app.run(host='0.0.0.0', port=10000, debug=False, use_reloader=False)
 
-# ==================== ЗАПУСК ====================
 if __name__ == "__main__":
     setup_main_menu_button()
     Thread(target=run_web_server, daemon=True).start()
